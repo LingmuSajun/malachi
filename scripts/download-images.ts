@@ -76,7 +76,8 @@ async function downloadOne(card: CardImageMeta): Promise<void> {
   const response = await fetch(url, {
     headers: {
       // Wikimedia は User-Agent を要求する
-      'User-Agent': 'Malachi-Tarot-Bot/1.0 (https://malachi.example.com; contact@example.com)',
+      'User-Agent':
+        'Mozilla/5.0 (compatible; Malachi-Tarot/1.0; +https://github.com/LingmuSajun/malachi)',
     },
     redirect: 'follow',
   })

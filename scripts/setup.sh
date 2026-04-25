@@ -21,15 +21,15 @@ else
   echo "  .env.local は既に存在します。スキップ。"
 fi
 
-# タロット画像取得(未取得の場合のみ)
+# タロット画像確認(git 管理のため常に存在するはず)
 echo "[3/4] タロット画像確認..."
 IMAGE_DIR="packages/tarot/images/major-arcana"
-if [ ! -d "$IMAGE_DIR" ] || [ -z "$(ls -A "$IMAGE_DIR" 2>/dev/null)" ]; then
-  echo "  画像を取得します..."
-  pnpm tarot:download
-  pnpm tarot:preprocess
+IMAGE_COUNT=$(ls "$IMAGE_DIR"/*.jpg 2>/dev/null | wc -l)
+if [ "$IMAGE_COUNT" -lt 22 ]; then
+  echo "  警告: 画像が $IMAGE_COUNT 枚しか見つかりません(期待値: 22)。"
+  echo "  git checkout packages/tarot/images/ を試してください。"
 else
-  echo "  画像は既に存在します。スキップ。"
+  echo "  画像 $IMAGE_COUNT 枚を確認。"
 fi
 
 # データ検証
