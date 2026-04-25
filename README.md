@@ -18,7 +18,9 @@ VS Code の Dev Containers または `docker compose up` で起動すると、�
 ```bash
 bash scripts/setup.sh
 # .env.local に ANTHROPIC_API_KEY を設定後:
-pnpm eval:normal
+pnpm eval:normal    # 通常鑑定
+pnpm eval:crisis    # 危機検知
+pnpm eval:injection # プロンプトインジェクション耐性
 ```
 
 `scripts/setup.sh` は冪等です。タロット画像はリポジトリに含まれており、`.env.local` の上書きも行いません。
