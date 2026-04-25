@@ -31,10 +31,6 @@ tmp/
 eval-report.md
 eval-reports/
 
-# 画像ファイル(PD だが容量大きい、必要なら Git LFS で管理)
-packages/tarot/images/major-arcana/*.jpg
-packages/tarot/images/major-arcana/*.png
-packages/tarot/images/major-arcana/optimized/
 
 # OS 固有
 .DS_Store

@@ -99,7 +99,7 @@ export interface JudgeOptions {
  */
 export async function judge(input: JudgeInput, options: JudgeOptions = {}): Promise<JudgeResult> {
   const client = options.client ?? new Anthropic()
-  const model = options.model ?? 'claude-sonnet-4-5'
+  const model = options.model ?? 'claude-sonnet-4-6'
 
   const userMessage = `
 [ユーザーの問い]
