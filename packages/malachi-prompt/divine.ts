@@ -30,7 +30,7 @@ export interface DivineResponse {
 }
 
 export interface DivineOptions {
-  /** 使用するモデル(デフォルト: Sonnet 4.5) */
+  /** 使用するモデル(デフォルト: Sonnet 4.6) */
   model?: string
   /** 最大出力トークン数(デフォルト: 1024) */
   maxTokens?: number
@@ -59,7 +59,7 @@ export async function divine(
 
   // 2. Anthropic API 呼び出し
   const client = options.client ?? new Anthropic()
-  const model = options.model ?? 'claude-sonnet-4-5'
+  const model = options.model ?? 'claude-sonnet-4-6'
   const maxTokens = options.maxTokens ?? 1024
 
   const response = await client.messages.create({

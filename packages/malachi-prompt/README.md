@@ -130,7 +130,7 @@ const { chars, estimatedTokens } = estimateTokens()
 console.log(`${chars} 文字、約 ${estimatedTokens} トークン`)
 ```
 
-### コスト見積もり(Claude Sonnet 4.5、2025年4月時点)
+### コスト見積もり(Claude Sonnet 4.6、2025年4月時点)
 
 1回の鑑定あたり:
 
@@ -150,11 +150,11 @@ console.log(`${chars} 文字、約 ${estimatedTokens} トークン`)
 
 | モデル            | 用途           | 理由                                       |
 | ----------------- | -------------- | ------------------------------------------ |
-| Claude Sonnet 4.5 | 通常の鑑定     | 一貫した語り口、複雑な象徴の読み解きに必要 |
+| Claude Sonnet 4.6 | 通常の鑑定     | 一貫した語り口、複雑な象徴の読み解きに必要 |
 | Claude Opus 4.7   | プレミアム鑑定 | 深い洞察、長文の総合鑑定                   |
 | Claude Haiku 4.5  | 不適           | キャラ一貫性に課題、語り口が崩れやすい     |
 
-MVP では全てのプランで Sonnet 4.5 を推奨。スケール後にプラン別に最適化する。
+MVP では全てのプランで Sonnet 4.6 を推奨。スケール後にプラン別に最適化する。
 
 ## カスタマイズ
 

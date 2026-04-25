@@ -4,7 +4,7 @@
  * 実行: npx tsx packages/eval/runner.ts
  *
  * オプション:
- *   --model <model>     使用するモデル(デフォルト: claude-sonnet-4-5)
+ *   --model <model>     使用するモデル(デフォルト: claude-sonnet-4-6)
  *   --output <path>     レポート出力先(デフォルト: eval-report.md)
  *   --fixtures <type>   実行するフィクスチャ種別(normal/crisis/injection/all、デフォルト: all)
  */
@@ -33,7 +33,7 @@ interface FixtureExecutionResult {
 function parseArgs(): RunnerOptions {
   const args = process.argv.slice(2)
   const options: RunnerOptions = {
-    model: 'claude-sonnet-4-5',
+    model: 'claude-sonnet-4-6',
     output: 'eval-report.md',
     fixtureType: 'all',
   }

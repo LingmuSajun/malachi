@@ -110,7 +110,7 @@ ${card.voice_hint}
   `.trim()
 
   const response = await anthropic.messages.create({
-    model: 'claude-sonnet-4-5',
+    model: 'claude-sonnet-4-6',
     max_tokens: 1024,
     system: `あなたは「マラキ」、最後の預言者。詳細は別途指定の人格仕様書に従う。\n\n${cardContext}`,
     messages: [{ role: 'user', content: userQuestion }],
