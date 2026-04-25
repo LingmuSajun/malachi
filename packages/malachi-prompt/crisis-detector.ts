@@ -14,6 +14,8 @@ export interface CrisisAssessment {
   level: CrisisLevel
   matched: string[]
   category?: 'self_harm' | 'violence' | 'abuse' | 'psychosis'
+  /** 検知手段: 正規表現 / AI / 両方 */
+  detectedBy: 'regex' | 'ai' | 'both'
 }
 
 // 重度: 即座に専門機関への誘導が必要
@@ -74,7 +76,7 @@ export function detectCrisis(text: string): CrisisAssessment {
   }
 
   if (matched.length > 0) {
-    return { level: 'severe', matched, category }
+    return { level: 'severe', matched, category, detectedBy: 'regex' }
   }
 
   // Moderate チェック
@@ -87,10 +89,10 @@ export function detectCrisis(text: string): CrisisAssessment {
   }
 
   if (matched.length > 0) {
-    return { level: 'moderate', matched, category }
+    return { level: 'moderate', matched, category, detectedBy: 'regex' }
   }
 
-  return { level: 'none', matched: [] }
+  return { level: 'none', matched: [], detectedBy: 'regex' }
 }
 
 /**
