@@ -3,6 +3,11 @@ set -e
 
 echo "=== Malachi セットアップ ==="
 
+# node_modules ボリュームの権限修正
+if [ -d node_modules ] && [ ! -w node_modules ]; then
+  sudo chown node:node node_modules
+fi
+
 # 依存関係インストール
 echo "[1/4] 依存関係インストール..."
 pnpm install

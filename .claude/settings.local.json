@@ -1,5 +1,11 @@
 {
   "permissions": {
-    "allow": ["Bash(docker compose *)", "Bash(chmod +x *)"]
+    "allow": [
+      "Bash(docker compose *)",
+      "Bash(chmod +x *)",
+      "Bash(pnpm --version)",
+      "Bash(bash *)",
+      "Bash(sudo chown *)"
+    ]
   }
 }
