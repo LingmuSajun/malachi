@@ -1,0 +1,28 @@
+{
+  "name": "malachi",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Malachi - LINE 上で動作する AI タロット占いサービス",
+  "scripts": {
+    "tarot:download": "tsx scripts/download-images.ts",
+    "tarot:preprocess": "tsx scripts/preprocess-images.ts",
+    "eval": "tsx packages/eval/runner.ts",
+    "eval:normal": "tsx packages/eval/runner.ts --fixtures normal",
+    "eval:crisis": "tsx packages/eval/runner.ts --fixtures crisis",
+    "eval:injection": "tsx packages/eval/runner.ts --fixtures injection",
+    "validate:tarot": "node -e \"const yaml=require('js-yaml');const fs=require('fs');const d=yaml.load(fs.readFileSync('packages/tarot/data/major-arcana.yaml','utf-8'));console.log('Cards:',d.cards.length)\""
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.30.0",
+    "@line/bot-sdk": "^9.0.0",
+    "js-yaml": "^4.1.0"
+  },
+  "devDependencies": {
+    "@types/js-yaml": "^4.0.9",
+    "@types/node": "^22.0.0",
+    "sharp": "^0.33.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.6.0"
+  },
+  "packageManager": "pnpm@9.0.0"
+}

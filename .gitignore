@@ -1,0 +1,69 @@
+# 依存パッケージ
+node_modules/
+.pnpm-store/
+.yarn/
+
+# 環境変数(秘密情報)
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# ビルド成果物
+dist/
+build/
+.next/
+out/
+
+# ログ
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# 一時ファイル
+tmp/
+.tmp/
+*.tmp
+
+# 評価レポート(自動生成)
+eval-report.md
+eval-reports/
+
+# 画像ファイル(PD だが容量大きい、必要なら Git LFS で管理)
+packages/tarot/images/major-arcana/*.jpg
+packages/tarot/images/major-arcana/*.png
+packages/tarot/images/major-arcana/optimized/
+
+# OS 固有
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE
+.vscode/
+!.vscode/extensions.json
+!.vscode/settings.json
+.idea/
+*.swp
+*.swo
+
+# Vercel
+.vercel
+
+# テスト
+coverage/
+.nyc_output/
+
+# Claude Code の一時ファイル
+.claude/cache/
+.claude/sessions/
+
+# Supabase ローカル開発
+.supabase/
+supabase/.branches/
+supabase/.temp/
+
+# Sharp キャッシュ
+.sharp-cache/
