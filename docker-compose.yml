@@ -1,0 +1,39 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: .devcontainer/Dockerfile
+    volumes:
+      - .:/workspace:cached
+      - node_modules:/workspace/node_modules
+    working_dir: /workspace
+    env_file:
+      - path: .env
+        required: false
+    command: sh -c "pnpm install && tail -f /dev/null"
+    ports:
+      - '3000:3000'
+    user: node
+
+  # Phase 1: Supabase の代替としてローカル Postgres を利用する場合
+  # docker compose --profile phase1 up で起動
+  db:
+    image: postgres:16-alpine
+    profiles: [phase1]
+    environment:
+      POSTGRES_USER: malachi
+      POSTGRES_PASSWORD: malachi
+      POSTGRES_DB: malachi_dev
+    ports:
+      - '5432:5432'
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U malachi -d malachi_dev']
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  node_modules:
+  postgres_data:

@@ -8,24 +8,20 @@ LINE 上で動作する AI タロット占いサービス。
 
 ## クイックスタート
 
+### devcontainer / Docker
+
+VS Code の Dev Containers または `docker compose up` で起動すると、セットアップが自動実行されます。
+起動後に `.env.local` の `ANTHROPIC_API_KEY` を設定してください。
+
+### ローカル / CI
+
 ```bash
-# 依存関係インストール
-pnpm install
-
-# 環境変数設定
-cp .env.example .env.local
-# .env.local を編集して ANTHROPIC_API_KEY を設定
-
-# タロット画像取得(Wikimedia Commons の1909年版PD)
-pnpm tarot:download
-pnpm tarot:preprocess
-
-# データの妥当性確認
-pnpm validate:tarot
-
-# 応答品質の自動評価(要 ANTHROPIC_API_KEY)
+bash scripts/setup.sh
+# .env.local に ANTHROPIC_API_KEY を設定後:
 pnpm eval:normal
 ```
+
+`scripts/setup.sh` は冪等です。タロット画像はリポジトリに含まれており、`.env.local` の上書きも行いません。
 
 ## ドキュメント
 
@@ -40,7 +36,7 @@ pnpm eval:normal
 - **言語**: TypeScript
 - **フレームワーク**: Next.js (App Router)
 - **DB**: Supabase (PostgreSQL + Auth + RLS)
-- **AI**: Anthropic Claude API (Sonnet 4.5)
+- **AI**: Anthropic Claude API (Sonnet 4.6)
 - **プラットフォーム**: LINE Messaging API + LIFF
 - **デプロイ**: Vercel
 - **開発**: Claude Code

@@ -46,4 +46,4 @@ docs/business/
 - サブスク主体: 月額 980円
 - プレミアム単発: 1,500〜3,000円
 - 想定 LTV: 約 19,600円(チャーン5%想定)
-- API 粗利率: 95%以上(Claude Sonnet 4.5、prompt caching 適用)
+- API 粗利率: 95%以上(Claude Sonnet 4.6、prompt caching 適用)

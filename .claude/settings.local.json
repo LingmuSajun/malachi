@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(docker compose *)",
+      "Bash(chmod +x *)",
+      "Bash(pnpm --version)",
+      "Bash(bash *)",
+      "Bash(sudo chown *)",
+      "Bash(pnpm tarot:download *)",
+      "Bash(echo \"exit: $?\")",
+      "Bash(pnpm tarot:preprocess *)",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)"
+    ]
+  }
+}

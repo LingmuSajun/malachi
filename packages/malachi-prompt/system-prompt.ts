@@ -70,7 +70,7 @@ export const STATIC_SYSTEM_PROMPT = [
  * 使用例:
  * ```
  * await anthropic.messages.create({
- *   model: "claude-sonnet-4-5",
+ *   model: "claude-sonnet-4-6",
  *   max_tokens: 1024,
  *   system: buildSystemMessages(),
  *   messages: [...]
