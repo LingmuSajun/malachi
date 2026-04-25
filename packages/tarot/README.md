@@ -1,6 +1,6 @@
 # Malachi Tarot Package
 
-Malachi の大アルカナ22枚分のデータと画像処理ツール。
+Malachi の大アルカナ22枚分のデータと画像。
 
 ## ディレクトリ構成
 
@@ -9,50 +9,24 @@ packages/tarot/
 ├── data/
 │   └── major-arcana.yaml      # 22枚の意味データ(編集対象)
 ├── images/
-│   └── major-arcana/           # ライダー版PD画像(1909年)
-│       └── optimized/          # LINE用に最適化された画像
+│   └── major-arcana/           # ライダー版PD画像(1909年) — git管理
+│       └── optimized/          # LINE用に最適化済み画像 — git管理
 ├── types/
 │   └── card.ts                 # TypeScript型定義
 ├── loader.ts                   # yamlロード・カード抽出ヘルパー
 └── README.md                   # このファイル
-
-scripts/
-├── download-images.ts          # Wikimedia から画像取得
-└── preprocess-images.ts        # 画像のリサイズ・最適化
 ```
 
-## セットアップ
+## 画像について
 
-依存パッケージのインストール:
+画像はリポジトリに含まれているため、**追加の準備は不要**。
 
-```bash
-pnpm add js-yaml
-pnpm add -D @types/js-yaml sharp tsx
-```
+- `images/major-arcana/` — Wikimedia Commons の1909年版オリジナルスキャン(元画像)
+- `images/major-arcana/optimized/` — LINE Flex Message 用(幅1024px / JPEG品質85%)にリサイズ済み
 
-## 画像の準備
+小アルカナ追加(Phase 3)など画像を追加・更新する場合は、その時点でスクリプトを整備すること。
 
-### 1. 画像ダウンロード
-
-Wikimedia Commons から1909年版ライダー・ウェイト・タロットの大アルカナ22枚を取得する。
-
-```bash
-npx tsx scripts/download-images.ts
-```
-
-成功すると `packages/tarot/images/major-arcana/` に `00-fool.jpg` 〜 `21-world.jpg` が保存される。
-
-### 2. 画像の最適化
-
-LINE Flex Message での表示に最適化(幅1024px、JPEG品質85%)。
-
-```bash
-npx tsx scripts/preprocess-images.ts
-```
-
-`packages/tarot/images/major-arcana/optimized/` に出力される。
-
-### 3. CDN へのアップロード
+## CDN へのアップロード(本番)
 
 最適化済み画像を Supabase Storage または Vercel Blob にアップロードし、得られた公開URLを LINE Flex Message の `hero.url` で参照する。
 

@@ -21,7 +21,7 @@ bash scripts/setup.sh
 pnpm eval:normal
 ```
 
-`scripts/setup.sh` は冪等です。画像の再取得や `.env.local` の上書きは行いません。
+`scripts/setup.sh` は冪等です。タロット画像はリポジトリに含まれており、`.env.local` の上書きも行いません。
 
 ## ドキュメント
 
