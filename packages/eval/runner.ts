@@ -9,6 +9,26 @@
  *   --fixtures <type>   実行するフィクスチャ種別(normal/crisis/injection/all、デフォルト: all)
  */
 
+import * as fsSync from 'node:fs'
+// Load .env.local (Next.js convention, not auto-loaded by tsx)
+try {
+  const envLocal = fsSync.readFileSync('.env.local', 'utf-8')
+  for (const line of envLocal.split('\n')) {
+    const trimmed = line.trim()
+    if (!trimmed || trimmed.startsWith('#')) continue
+    const eq = trimmed.indexOf('=')
+    if (eq === -1) continue
+    const key = trimmed.slice(0, eq).trim()
+    const val = trimmed
+      .slice(eq + 1)
+      .trim()
+      .replace(/^["']|["']$/g, '')
+    if (!(key in process.env)) process.env[key] = val
+  }
+} catch {
+  /* .env.local が無ければ無視 */
+}
+
 import Anthropic from '@anthropic-ai/sdk'
 import * as fs from 'node:fs/promises'
 import * as path from 'node:path'

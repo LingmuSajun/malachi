@@ -10,7 +10,8 @@
       "Bash(echo \"exit: $?\")",
       "Bash(pnpm tarot:preprocess *)",
       "Bash(git add *)",
-      "Bash(git commit -m ' *)"
+      "Bash(git commit -m ' *)",
+      "Bash(pnpm eval:normal *)"
     ]
   }
 }
