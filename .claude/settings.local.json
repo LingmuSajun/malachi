@@ -11,7 +11,9 @@
       "Bash(pnpm tarot:preprocess *)",
       "Bash(git add *)",
       "Bash(git commit -m ' *)",
-      "Bash(pnpm eval:normal *)"
+      "Bash(pnpm eval:normal *)",
+      "Bash(pnpm eval:crisis)",
+      "Bash(pnpm eval:injection)"
     ]
   }
 }
