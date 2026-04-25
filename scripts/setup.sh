@@ -21,22 +21,15 @@ else
   echo "  .env.local は既に存在します。スキップ。"
 fi
 
-# タロット画像確認 + 最適化(git 管理のため常に存在するはず)
-echo "[3/4] タロット画像確認・最適化..."
-IMAGE_DIR="packages/tarot/images/major-arcana"
-IMAGE_COUNT=$(ls "$IMAGE_DIR"/*.jpg 2>/dev/null | wc -l)
-if [ "$IMAGE_COUNT" -lt 22 ]; then
-  echo "  警告: 画像が $IMAGE_COUNT 枚しか見つかりません(期待値: 22)。"
+# タロット画像確認(git 管理)
+echo "[3/4] タロット画像確認..."
+IMAGE_COUNT=$(ls packages/tarot/images/major-arcana/*.jpg 2>/dev/null | wc -l)
+OPTIMIZED_COUNT=$(ls packages/tarot/images/major-arcana/optimized/*.jpg 2>/dev/null | wc -l)
+if [ "$IMAGE_COUNT" -lt 22 ] || [ "$OPTIMIZED_COUNT" -lt 22 ]; then
+  echo "  警告: 画像が不足しています(元画像: $IMAGE_COUNT/22, 最適化済み: $OPTIMIZED_COUNT/22)。"
   echo "  git checkout packages/tarot/images/ を試してください。"
 else
-  echo "  画像 $IMAGE_COUNT 枚を確認。"
-  OPTIMIZED_COUNT=$(ls "$IMAGE_DIR/optimized"/*.jpg 2>/dev/null | wc -l)
-  if [ "$OPTIMIZED_COUNT" -lt 22 ]; then
-    echo "  最適化済み画像が不足($OPTIMIZED_COUNT/22)。前処理を実行します..."
-    pnpm tarot:preprocess
-  else
-    echo "  最適化済み画像 $OPTIMIZED_COUNT 枚を確認。スキップ。"
-  fi
+  echo "  元画像 $IMAGE_COUNT 枚、最適化済み $OPTIMIZED_COUNT 枚を確認。"
 fi
 
 # データ検証

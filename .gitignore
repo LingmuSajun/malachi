@@ -31,8 +31,6 @@ tmp/
 eval-report.md
 eval-reports/
 
-# 画像の最適化済み出力(自動生成)
-packages/tarot/images/major-arcana/optimized/
 
 # OS 固有
 .DS_Store
