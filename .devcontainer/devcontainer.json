@@ -5,6 +5,9 @@
   },
   "workspaceMount": "source=${localWorkspaceFolder},target=/workspace,type=bind,consistency=cached",
   "workspaceFolder": "/workspace",
+  "features": {
+    "ghcr.io/anthropics/devcontainer-features/claude-code:1.0": {}
+  },
   "postCreateCommand": "pnpm install",
   "customizations": {
     "vscode": {
@@ -12,7 +15,8 @@
         "esbenp.prettier-vscode",
         "dbaeumer.vscode-eslint",
         "ms-vscode.vscode-typescript-next",
-        "ms-vscode.vscode-json"
+        "ms-vscode.vscode-json",
+        "anthropic.claude-code"
       ],
       "settings": {
         "editor.formatOnSave": true,
@@ -24,5 +28,8 @@
   },
   "forwardPorts": [3000],
   "remoteUser": "node",
-  "mounts": ["source=malachi-node-modules,target=/workspace/node_modules,type=volume"]
+  "mounts": [
+    "source=malachi-node-modules,target=/workspace/node_modules,type=volume",
+    "source=malachi-claude-config,target=/home/node/.claude,type=volume"
+  ]
 }
