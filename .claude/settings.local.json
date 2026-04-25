@@ -6,7 +6,9 @@
       "Bash(pnpm --version)",
       "Bash(bash *)",
       "Bash(sudo chown *)",
-      "Bash(pnpm tarot:download *)"
+      "Bash(pnpm tarot:download *)",
+      "Bash(echo \"exit: $?\")",
+      "Bash(pnpm tarot:preprocess *)"
     ]
   }
 }

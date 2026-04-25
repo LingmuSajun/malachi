@@ -21,8 +21,8 @@ else
   echo "  .env.local は既に存在します。スキップ。"
 fi
 
-# タロット画像確認(git 管理のため常に存在するはず)
-echo "[3/4] タロット画像確認..."
+# タロット画像確認 + 最適化(git 管理のため常に存在するはず)
+echo "[3/4] タロット画像確認・最適化..."
 IMAGE_DIR="packages/tarot/images/major-arcana"
 IMAGE_COUNT=$(ls "$IMAGE_DIR"/*.jpg 2>/dev/null | wc -l)
 if [ "$IMAGE_COUNT" -lt 22 ]; then
@@ -30,6 +30,13 @@ if [ "$IMAGE_COUNT" -lt 22 ]; then
   echo "  git checkout packages/tarot/images/ を試してください。"
 else
   echo "  画像 $IMAGE_COUNT 枚を確認。"
+  OPTIMIZED_COUNT=$(ls "$IMAGE_DIR/optimized"/*.jpg 2>/dev/null | wc -l)
+  if [ "$OPTIMIZED_COUNT" -lt 22 ]; then
+    echo "  最適化済み画像が不足($OPTIMIZED_COUNT/22)。前処理を実行します..."
+    pnpm tarot:preprocess
+  else
+    echo "  最適化済み画像 $OPTIMIZED_COUNT 枚を確認。スキップ。"
+  fi
 fi
 
 # データ検証
