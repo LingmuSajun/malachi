@@ -8,7 +8,9 @@
       "Bash(sudo chown *)",
       "Bash(pnpm tarot:download *)",
       "Bash(echo \"exit: $?\")",
-      "Bash(pnpm tarot:preprocess *)"
+      "Bash(pnpm tarot:preprocess *)",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)"
     ]
   }
 }
