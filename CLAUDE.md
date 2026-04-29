@@ -40,6 +40,12 @@ malachi/
 ├── packages/
 │   ├── tarot/                      # 大アルカナ22枚のデータと画像
 │   ├── malachi-prompt/             # System プロンプト + 危機検知 + 統合
+│   ├── database/                   # Supabase スキーマ・型・リポジトリ
+│   │   ├── migrations/             # SQL マイグレーションファイル
+│   │   ├── types.ts                # Row / Insert / Update 型 + Database ジェネリック
+│   │   ├── client.ts               # Supabase クライアント(サービスロールキー)
+│   │   ├── repositories.ts         # DB アクセスの薄いラッパー
+│   │   └── index.ts                # re-export
 │   └── eval/                       # LLM-as-Judge による品質評価
 ├── apps/
 │   └── line-bot/                   # LINE Messaging API + LIFF (今後実装)
@@ -48,36 +54,14 @@ malachi/
 
 ## 開発フェーズ
 
-### Phase 0(完了): 基盤設計
+タスクの詳細と進捗は **TODO.md** で一元管理する。
 
-- [x] 事業コンセプト確定
-- [x] サービス名 Malachi 確定
-- [x] 占術選定(タロット22枚)
-- [x] マラキ人格仕様
-- [x] System プロンプト v1
-- [x] 大アルカナデータ整備
-- [x] 大アルカナ画像(元画像 + LINE最適化済み)git管理化
-- [x] 危機検知 + Judge による品質評価
-
-### Phase 1(進行中): MVP 構築
-
-- [ ] LINE 公式アカウント開設・Messaging API 連携
-- [ ] Supabase スキーマ設計(users, conversations, readings, subscriptions)
-- [ ] LINE Webhook 処理(Next.js Route Handler)
-- [ ] LIFF でカード引き UX
-- [ ] 課金導線(LINE 内課金 or Stripe)
-
-### Phase 2: グロース
-
-- [ ] CPA 最適化のチャネル整備(SEO / Instagram / TikTok)
-- [ ] 数秘術(無料入口)追加
-- [ ] 西洋占星術(プレミアム)追加
-
-### Phase 3: 拡張
-
-- [ ] 小アルカナ56枚追加
-- [ ] 自己啓発・ヒーリング領域への拡張
-- [ ] B2B(法人向け)展開検討
+| Phase   | 状態      | 概要                                                          |
+| ------- | --------- | ------------------------------------------------------------- |
+| Phase 0 | ✅ 完了   | 基盤設計(コンセプト・プロンプト・タロットデータ・DB スキーマ) |
+| Phase 1 | 🚧 進行中 | MVP 構築(LINE Bot + Supabase + LIFF + 課金)                   |
+| Phase 2 | 未着手    | グロース(CPA 最適化・数秘術・西洋占星術)                      |
+| Phase 3 | 未着手    | 拡張(小アルカナ・ヒーリング・B2B)                             |
 
 ## 開発時の重要原則
 
@@ -136,6 +120,8 @@ Read-only な参照で完結する。
 
 (このセクションは進捗に応じて随時更新する)
 
-最終更新: 2026-04-25
-進行中タスク: LINE Bot MVP の実装準備
-次のマイルストーン: LINE 公式アカウント開設 + Webhook 受信のプロトタイプ
+最終更新: 2026-04-29
+進行フェーズ: Phase 1 — MVP 構築
+直近の達成: LINE Bot 本番稼働確認(マラキがユーザーのメッセージに返答)
+次のマイルストーン: 課金導線(Stripe) or LIFF カード引き UX
+詳細タスク: TODO.md を参照

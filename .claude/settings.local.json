@@ -10,7 +10,16 @@
       "Bash(pnpm tarot:preprocess *)",
       "Bash(git add *)",
       "Bash(git commit -m ' *)",
-      "Bash(pnpm eval *)"
+      "Bash(pnpm eval *)",
+      "Bash(pnpm install *)",
+      "Bash(npx tsc *)",
+      "Bash(node *)",
+      "Bash(git -C /workspace diff --stat HEAD)",
+      "Bash(git *)",
+      "Bash(npx vercel *)",
+      "Bash(pkill -f \"vercel whoami\")",
+      "Bash(pnpm run *)",
+      "Bash(pkill -f \"vercel env\")"
     ]
   }
 }
