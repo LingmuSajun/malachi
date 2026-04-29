@@ -121,8 +121,9 @@ export async function divine(
     meta: {
       inputTokens: response.usage.input_tokens,
       outputTokens: response.usage.output_tokens,
-      cacheReadTokens: response.usage.cache_read_input_tokens ?? 0,
-      cacheCreationTokens: response.usage.cache_creation_input_tokens ?? 0,
+      // SDK 型定義にないが API からは返される拡張フィールド
+      cacheReadTokens: (response.usage as unknown as Record<string, number>)['cache_read_input_tokens'] ?? 0,
+      cacheCreationTokens: (response.usage as unknown as Record<string, number>)['cache_creation_input_tokens'] ?? 0,
       model,
     },
   }
