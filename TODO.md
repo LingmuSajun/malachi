@@ -32,19 +32,20 @@
 ## 🟠 安全・セキュリティ — Phase 1 実装中に対処
 
 - [x] Supabase RLS 設計 — スキーマに組み込み済み(anon/authenticated アクセスを拒否、サービスロールのみ許可)
-- [ ] LINE Webhook の `X-Line-Signature` HMAC-SHA256 署名検証を実装
+- [x] LINE Webhook の `X-Line-Signature` HMAC-SHA256 署名検証を実装 — `lib/line/signature.ts`
 - [ ] API キー漏洩時のローテーション手順をドキュメント化
 - [ ] Rate limiting / abuse 対策の設計(大量リクエストによるコスト爆増防止)
 
 ---
 
-## Phase 1: MVP 構築 — 進行中
+## Phase 1: MVP 構築 — 進行中(LINE Bot 本番稼働済み)
 
 - [x] Supabase スキーマ設計・実装(users / conversations / readings / subscriptions)
-- [ ] **[颯駿] Supabase プロジェクト作成 → `.env.local` に URL/キーを設定**
-- [ ] **[颯駿] `packages/database/migrations/0001_initial_schema.sql` を Supabase SQL Editor で実行**
-- [ ] LINE 公式アカウント開設・Messaging API 連携
-- [ ] LINE Webhook 処理(Next.js Route Handler)
+- [x] Supabase プロジェクト作成・環境変数設定
+- [x] `packages/database/migrations/0001_initial_schema.sql` 実行
+- [x] LINE 公式アカウント開設・Messaging API 連携(Channel Secret / Access Token 取得済み)
+- [x] LINE Webhook 処理(Next.js Route Handler) — 本番稼働確認済み
+- [x] Vercel 本番デプロイ・エンドツーエンド動作確認(マラキの返答を確認)
 - [ ] LIFF でカード引き UX
 - [ ] 課金導線(LINE 内課金 or Stripe)
 
