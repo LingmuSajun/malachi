@@ -37,6 +37,12 @@ export default function CardPage() {
 
         const profile = await liff.getProfile()
         setLineUserId(profile.userId)
+
+        // LINE メッセージから渡された質問を自動入力
+        const params = new URLSearchParams(window.location.search)
+        const q = params.get('q')
+        if (q) setQuestion(decodeURIComponent(q))
+
         setPhase('ready')
       } catch {
         setErrorMsg('LIFF の起動に失敗しました。LINEアプリから開き直してください。')
