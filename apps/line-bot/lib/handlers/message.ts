@@ -1,16 +1,10 @@
 import type { MessageEvent, TextEventMessage } from '@line/bot-sdk'
-import { drawCards } from '@malachi/tarot'
-import { divine } from '@malachi/prompt'
 import { getLineClient } from '../line/client'
 import {
   findUserByLineId,
-  saveReading,
-  startConversation,
-  touchConversation,
   upsertUser,
   createFreeSubscription,
 } from '@malachi/database'
-import type { DrawnCardRecord } from '@malachi/database'
 
 export async function handleMessage(event: MessageEvent): Promise<void> {
   if (event.message.type !== 'text') return
@@ -19,47 +13,73 @@ export async function handleMessage(event: MessageEvent): Promise<void> {
   const lineUserId = event.source.userId
   if (!lineUserId) return
 
+  // ユーザーレコードを確保(LIFF 側でも upsert するが、初回メッセージ時の保険)
   let user = await findUserByLineId(lineUserId)
   if (!user) {
     user = await upsertUser({ line_user_id: lineUserId })
     await createFreeSubscription(user.id)
   }
 
-  const conversation = await startConversation(user.id)
-  const [drawn] = drawCards(1)
+  const liffId = process.env.NEXT_PUBLIC_LIFF_ID
+  if (!liffId) throw new Error('NEXT_PUBLIC_LIFF_ID is not set')
 
-  const result = await divine({
-    userName: undefined,
-    question: message.text,
-    drawnCards: [{ card: drawn.card, orientation: drawn.orientation }],
-    spread: 'single',
-  })
-
-  const cardRecord: DrawnCardRecord = {
-    card_id: drawn.card.id,
-    slug: drawn.card.slug,
-    orientation: drawn.orientation,
-    position: null,
-  }
-
-  await saveReading({
-    conversation_id: conversation.id,
-    user_id: user.id,
-    question: message.text,
-    spread_type: 'single',
-    cards: [cardRecord],
-    response_text: result.text,
-    crisis_level: result.crisis.level,
-    input_tokens: result.meta?.inputTokens ?? null,
-    output_tokens: result.meta?.outputTokens ?? null,
-    cache_read_tokens: result.meta?.cacheReadTokens ?? null,
-    cache_creation_tokens: result.meta?.cacheCreationTokens ?? null,
-  })
-
-  await touchConversation(conversation.id)
+  // 質問を URL パラメータに載せて LIFF へ渡す(1000文字以内に収める)
+  const q = encodeURIComponent(message.text.slice(0, 200))
+  const liffUrl = `https://liff.line.me/${liffId}?q=${q}`
 
   await getLineClient().replyMessage({
     replyToken: event.replyToken,
-    messages: [{ type: 'text', text: result.text }],
+    messages: [
+      {
+        type: 'flex',
+        altText: 'マラキがカードを用意しています',
+        contents: {
+          type: 'bubble',
+          body: {
+            type: 'box',
+            layout: 'vertical',
+            contents: [
+              {
+                type: 'text',
+                text: '✦  マラキの導き  ✦',
+                weight: 'bold',
+                color: '#b89fd4',
+                align: 'center',
+                size: 'sm',
+              },
+              {
+                type: 'text',
+                text: 'カードがあなたを待っている。\n問いを胸に、扉を開きなさい。',
+                wrap: true,
+                margin: 'md',
+                align: 'center',
+                color: '#e8d9c5',
+                size: 'sm',
+              },
+            ],
+            backgroundColor: '#1a0e2e',
+            paddingAll: '20px',
+          },
+          footer: {
+            type: 'box',
+            layout: 'vertical',
+            contents: [
+              {
+                type: 'button',
+                action: {
+                  type: 'uri',
+                  label: 'カードを引く',
+                  uri: liffUrl,
+                },
+                style: 'primary',
+                color: '#6b3fa0',
+              },
+            ],
+            backgroundColor: '#1a0e2e',
+            paddingAll: '12px',
+          },
+        },
+      },
+    ],
   })
 }

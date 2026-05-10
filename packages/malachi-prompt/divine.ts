@@ -97,7 +97,7 @@ export async function divine(
     }
   }
   const model = options.model ?? 'claude-sonnet-4-6'
-  const maxTokens = options.maxTokens ?? 1024
+  const maxTokens = options.maxTokens ?? 1500
 
   const response = await client.messages.create({
     model,
