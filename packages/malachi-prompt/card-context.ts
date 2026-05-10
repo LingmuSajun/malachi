@@ -34,6 +34,20 @@ export interface DivineRequest {
 }
 
 /**
+ * 質問テキストからカテゴリを推定する。
+ * 明示的に渡された場合はそちらを優先する。
+ */
+export function detectCategory(question: string): NonNullable<DivineRequest['questionCategory']> {
+  const q = question
+  if (/彼女?|好き|恋|デート|付き合|別れ|復縁|告白|片思|両思|婚|結婚|浮気/.test(q)) return 'love'
+  if (/友|職場|同僚|上司|部下|親|家族|人間関係|仲|いじめ/.test(q)) return 'relationships'
+  if (/仕事|転職|キャリア|就職|副業|起業|ビジネス|職場環境/.test(q)) return 'work'
+  if (/どちら|選択|迷|どうすれば|判断|決め|選ぶ/.test(q)) return 'decision'
+  if (/自分|自己|内面|自信|性格|変わり|私って|生き方/.test(q)) return 'self'
+  return 'love'
+}
+
+/**
  * 1枚のカードの情報を、マラキが解釈できる形式の文字列に整形する。
  */
 function formatCardForPrompt(
@@ -80,11 +94,13 @@ export function buildMessages(
   const messages = [...(request.conversationHistory ?? [])]
 
   // 今回のユーザーメッセージ
+  const resolvedCategory = request.questionCategory ?? detectCategory(request.question)
+
   const cardSection = request.drawnCards
     .map((d, i) =>
       request.drawnCards.length > 1
-        ? `【${i + 1}枚目】\n${formatCardForPrompt(d, request.questionCategory)}`
-        : formatCardForPrompt(d, request.questionCategory)
+        ? `【${i + 1}枚目】\n${formatCardForPrompt(d, resolvedCategory)}`
+        : formatCardForPrompt(d, resolvedCategory)
     )
     .join('\n\n')
 
