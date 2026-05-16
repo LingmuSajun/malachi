@@ -9,18 +9,36 @@ import {
 } from '@malachi/database'
 import { divine } from '@malachi/prompt'
 import { drawCards } from '@malachi/tarot'
+import { verifyLiffAccessToken } from '../../../../lib/liff/verify'
+
+const MAX_QUESTION_LEN = 500
+const MAX_USERNAME_LEN = 50
 
 export async function POST(req: Request) {
-  let body: { lineUserId?: string; userName?: string; question?: string }
+  let body: { lineUserId?: string; liffAccessToken?: string; userName?: string; question?: string }
   try {
     body = await req.json()
   } catch {
     return Response.json({ error: 'Invalid JSON' }, { status: 400 })
   }
 
-  const { lineUserId, userName, question } = body
-  if (!lineUserId) {
-    return Response.json({ error: 'lineUserId is required' }, { status: 400 })
+  const { lineUserId, liffAccessToken, userName, question } = body
+  if (!lineUserId || !liffAccessToken) {
+    return Response.json({ error: 'lineUserId and liffAccessToken are required' }, { status: 400 })
+  }
+
+  // LIFFトークンをLINE APIで検証し、self-reportedのlineUserIdと照合
+  const verifiedUserId = await verifyLiffAccessToken(liffAccessToken)
+  if (verifiedUserId !== lineUserId) {
+    return Response.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
+  // 入力長バリデーション
+  if (question && question.length > MAX_QUESTION_LEN) {
+    return Response.json({ error: 'question too long' }, { status: 400 })
+  }
+  if (userName && userName.length > MAX_USERNAME_LEN) {
+    return Response.json({ error: 'userName too long' }, { status: 400 })
   }
 
   let user = await findUserByLineId(lineUserId)
@@ -65,6 +83,7 @@ export async function POST(req: Request) {
   await touchConversation(conversation.id)
 
   return Response.json({
+    conversationId: conversation.id,
     cardSlug: drawn.card.slug,
     cardName: drawn.card.name,
     cardNameEn: drawn.card.name_en,
