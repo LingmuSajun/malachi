@@ -1,26 +1,50 @@
-import { drawCards } from '@malachi/tarot'
-import { divine } from '@malachi/prompt'
-import {
-  findUserByLineId,
-  upsertUser,
-  createFreeSubscription,
-  startConversation,
-  saveReading,
-  touchConversation,
-} from '@malachi/database'
 import type { DrawnCardRecord } from '@malachi/database'
+import {
+  createFreeSubscription,
+  findUserByLineId,
+  saveReading,
+  startConversation,
+  touchConversation,
+  upsertUser,
+} from '@malachi/database'
+import { divine } from '@malachi/prompt'
+import { drawCards } from '@malachi/tarot'
+import { verifyLiffAccessToken } from '../../../../lib/liff/verify'
+
+const MAX_QUESTION_LEN = 500
+const MAX_USERNAME_LEN = 50
 
 export async function POST(req: Request) {
-  let body: { lineUserId?: string; question?: string }
+  let body: {
+    lineUserId?: string
+    liffAccessToken?: string
+    userName?: string
+    question?: string
+    questionCategory?: string
+  }
   try {
     body = await req.json()
   } catch {
     return Response.json({ error: 'Invalid JSON' }, { status: 400 })
   }
 
-  const { lineUserId, question } = body
-  if (!lineUserId) {
-    return Response.json({ error: 'lineUserId is required' }, { status: 400 })
+  const { lineUserId, liffAccessToken, userName, question, questionCategory } = body
+  if (!lineUserId || !liffAccessToken) {
+    return Response.json({ error: 'lineUserId and liffAccessToken are required' }, { status: 400 })
+  }
+
+  // LIFFトークンをLINE APIで検証し、self-reportedのlineUserIdと照合
+  const verifiedUserId = await verifyLiffAccessToken(liffAccessToken)
+  if (verifiedUserId !== lineUserId) {
+    return Response.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
+  // 入力長バリデーション
+  if (question && question.length > MAX_QUESTION_LEN) {
+    return Response.json({ error: 'question too long' }, { status: 400 })
+  }
+  if (userName && userName.length > MAX_USERNAME_LEN) {
+    return Response.json({ error: 'userName too long' }, { status: 400 })
   }
 
   let user = await findUserByLineId(lineUserId)
@@ -34,9 +58,16 @@ export async function POST(req: Request) {
 
   const resolvedQuestion = question?.trim() || '今の私へのメッセージを聞かせてください'
 
+  const VALID_CATEGORIES = new Set(['love', 'relationships', 'self', 'work', 'decision'])
+  const resolvedCategory =
+    questionCategory && VALID_CATEGORIES.has(questionCategory)
+      ? (questionCategory as 'love' | 'relationships' | 'self' | 'work' | 'decision')
+      : undefined
+
   const result = await divine({
-    userName: undefined,
+    userName: userName?.trim() || undefined,
     question: resolvedQuestion,
+    questionCategory: resolvedCategory,
     drawnCards: [{ card: drawn.card, orientation: drawn.orientation }],
     spread: 'single',
   })
@@ -65,6 +96,7 @@ export async function POST(req: Request) {
   await touchConversation(conversation.id)
 
   return Response.json({
+    conversationId: conversation.id,
     cardSlug: drawn.card.slug,
     cardName: drawn.card.name,
     cardNameEn: drawn.card.name_en,

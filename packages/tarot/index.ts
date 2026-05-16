@@ -1,2 +1,8 @@
-export { loadMajorArcana, getCardById, getCardBySlug, drawCards } from './loader'
-export type { TarotCard, MajorArcanaData, Orientation, QuestionContext, SpreadPosition } from './types/card'
+export { drawCards, getCardById, getCardBySlug, loadMajorArcana } from './loader'
+export type {
+  MajorArcanaData,
+  Orientation,
+  QuestionContext,
+  SpreadPosition,
+  TarotCard,
+} from './types/card'

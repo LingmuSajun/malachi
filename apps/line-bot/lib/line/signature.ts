@@ -13,9 +13,7 @@ export function verifyLineSignature(
 ): boolean {
   if (!signature) return false
 
-  const expected = createHmac('sha256', channelSecret)
-    .update(rawBody)
-    .digest('base64')
+  const expected = createHmac('sha256', channelSecret).update(rawBody).digest('base64')
 
   try {
     return timingSafeEqual(Buffer.from(signature), Buffer.from(expected))
