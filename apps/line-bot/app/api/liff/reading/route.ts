@@ -9,7 +9,6 @@ import {
 } from '@malachi/database'
 import { divine } from '@malachi/prompt'
 import { drawCards } from '@malachi/tarot'
-import { unstable_after as after } from 'next/server'
 import { verifyLiffAccessToken } from '../../../../lib/liff/verify'
 import { pushReadingResult } from '../../../../lib/line/push'
 
@@ -97,17 +96,14 @@ export async function POST(req: Request) {
 
   await touchConversation(conversation.id)
 
-  // レスポンス返却後にLINEチャットへプッシュ通知
-  // after() はレスポンス送信後もサーバーレス関数を生存させる Next.js 15 の仕組み
-  after(() => {
-    pushReadingResult({
-      lineUserId,
-      cardName: drawn.card.name,
-      cardImage: drawn.card.image,
-      orientation: drawn.orientation,
-      text: result.text,
-    }).catch((err) => console.error('[push] reading result failed:', err))
-  })
+  // LINEチャットに鑑定結果をプッシュ通知(失敗しても鑑定結果は返す)
+  await pushReadingResult({
+    lineUserId,
+    cardName: drawn.card.name,
+    cardImage: drawn.card.image,
+    orientation: drawn.orientation,
+    text: result.text,
+  }).catch((err) => console.error('[push] reading result failed:', err))
 
   return Response.json({
     conversationId: conversation.id,
