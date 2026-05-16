@@ -65,6 +65,7 @@ export default function CardPage() {
   const [isFollowingUp, setIsFollowingUp] = useState(false)
   const [followUpExchanges, setFollowUpExchanges] = useState<FollowUpExchange[]>([])
   const liffRef = useRef<(typeof import('@line/liff'))['default'] | null>(null)
+  const followUpAbortRef = useRef<AbortController | null>(null)
 
   useEffect(() => {
     ;(async () => {
@@ -136,6 +137,11 @@ export default function CardPage() {
     const currentQuestion = followUpText.trim()
     setFollowUpText('')
 
+    // 前のリクエストが残っていればキャンセル
+    followUpAbortRef.current?.abort()
+    const controller = new AbortController()
+    followUpAbortRef.current = controller
+
     try {
       const res = await fetch('/api/liff/followup', {
         method: 'POST',
@@ -150,6 +156,7 @@ export default function CardPage() {
           conversationId: reading.conversationId,
           conversationHistory: chatHistory,
         }),
+        signal: controller.signal,
       })
       if (!res.ok) throw new Error('API error')
       const data: { text: string } = await res.json()
@@ -160,7 +167,9 @@ export default function CardPage() {
         { role: 'user', content: currentQuestion },
         { role: 'assistant', content: data.text },
       ])
-    } catch {
+    } catch (err) {
+      // 新しい鑑定への切り替えによるキャンセルは無視する
+      if (err instanceof DOMException && err.name === 'AbortError') return
       setFollowUpExchanges((prev) => [
         ...prev,
         {
@@ -174,6 +183,9 @@ export default function CardPage() {
   }
 
   function handleNewReading() {
+    // フォローアップ中のリクエストをキャンセルしてから state をリセット
+    followUpAbortRef.current?.abort()
+    followUpAbortRef.current = null
     setPhase('ready')
     setReading(null)
     setFlipped(false)
@@ -181,6 +193,7 @@ export default function CardPage() {
     setSelectedTheme(null)
     setChatHistory([])
     setFollowUpText('')
+    setIsFollowingUp(false)
     setFollowUpExchanges([])
   }
 
