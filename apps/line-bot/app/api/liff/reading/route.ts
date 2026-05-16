@@ -96,8 +96,8 @@ export async function POST(req: Request) {
 
   await touchConversation(conversation.id)
 
-  // LINEチャットに鑑定結果を送り返す(fire-and-forget)
-  pushReadingResult({
+  // LINEチャットに鑑定結果をプッシュ通知(失敗しても鑑定結果は返す)
+  await pushReadingResult({
     lineUserId,
     cardName: drawn.card.name,
     cardImage: drawn.card.image,
