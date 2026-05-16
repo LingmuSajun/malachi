@@ -15,14 +15,20 @@ const MAX_QUESTION_LEN = 500
 const MAX_USERNAME_LEN = 50
 
 export async function POST(req: Request) {
-  let body: { lineUserId?: string; liffAccessToken?: string; userName?: string; question?: string }
+  let body: {
+    lineUserId?: string
+    liffAccessToken?: string
+    userName?: string
+    question?: string
+    questionCategory?: string
+  }
   try {
     body = await req.json()
   } catch {
     return Response.json({ error: 'Invalid JSON' }, { status: 400 })
   }
 
-  const { lineUserId, liffAccessToken, userName, question } = body
+  const { lineUserId, liffAccessToken, userName, question, questionCategory } = body
   if (!lineUserId || !liffAccessToken) {
     return Response.json({ error: 'lineUserId and liffAccessToken are required' }, { status: 400 })
   }
@@ -52,9 +58,16 @@ export async function POST(req: Request) {
 
   const resolvedQuestion = question?.trim() || '今の私へのメッセージを聞かせてください'
 
+  const VALID_CATEGORIES = new Set(['love', 'relationships', 'self', 'work', 'decision'])
+  const resolvedCategory =
+    questionCategory && VALID_CATEGORIES.has(questionCategory)
+      ? (questionCategory as 'love' | 'relationships' | 'self' | 'work' | 'decision')
+      : undefined
+
   const result = await divine({
     userName: userName?.trim() || undefined,
     question: resolvedQuestion,
+    questionCategory: resolvedCategory,
     drawnCards: [{ card: drawn.card, orientation: drawn.orientation }],
     spread: 'single',
   })

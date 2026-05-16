@@ -52,9 +52,13 @@ LIFF からカード鑑定リクエストを受け取る。
   "lineUserId": "U...",
   "liffAccessToken": "eyJ...",
   "userName": "美咲",
-  "question": "彼の気持ちが知りたい"
+  "question": "彼の気持ちが知りたい",
+  "questionCategory": "love"
 }
 ```
+
+`questionCategory` は省略可。`love` / `work` / `relationships` / `self` / `decision` のいずれか。
+指定するとマラキの解釈がテーマに特化する(カードの `contexts` フィールドを使用)。
 
 **レスポンス**:
 

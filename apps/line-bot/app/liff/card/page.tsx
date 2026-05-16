@@ -5,6 +5,34 @@ import styles from './card.module.css'
 
 type Phase = 'loading' | 'ready' | 'drawing' | 'revealed' | 'error'
 
+type ThemeKey = 'love' | 'work' | 'relationships' | 'today'
+
+const THEMES: { key: ThemeKey; label: string; category?: string; placeholder: string }[] = [
+  {
+    key: 'love',
+    label: '恋愛',
+    category: 'love',
+    placeholder: '彼のこと、恋愛の悩みを書いてください',
+  },
+  {
+    key: 'work',
+    label: '仕事・お金',
+    category: 'work',
+    placeholder: '仕事の悩み、転職、お金のことを書いてください',
+  },
+  {
+    key: 'relationships',
+    label: '人間関係',
+    category: 'relationships',
+    placeholder: '友人、家族、職場の人間関係について書いてください',
+  },
+  {
+    key: 'today',
+    label: '今日の一枚',
+    placeholder: '質問は省略できます。今日のメッセージを引きます',
+  },
+]
+
 interface ReadingResult {
   conversationId: string
   cardSlug: string
@@ -31,6 +59,7 @@ export default function CardPage() {
   const [reading, setReading] = useState<ReadingResult | null>(null)
   const [errorMsg, setErrorMsg] = useState('')
   const [flipped, setFlipped] = useState(false)
+  const [selectedTheme, setSelectedTheme] = useState<ThemeKey | null>(null)
   const [chatHistory, setChatHistory] = useState<ChatMessage[]>([])
   const [followUpText, setFollowUpText] = useState('')
   const [isFollowingUp, setIsFollowingUp] = useState(false)
@@ -81,6 +110,7 @@ export default function CardPage() {
           liffAccessToken,
           userName,
           question: question.trim() || '今の私へのメッセージを聞かせてください',
+          questionCategory: THEMES.find((t) => t.key === selectedTheme)?.category,
         }),
       })
       if (!res.ok) throw new Error('API error')
@@ -148,6 +178,7 @@ export default function CardPage() {
     setReading(null)
     setFlipped(false)
     setQuestion('')
+    setSelectedTheme(null)
     setChatHistory([])
     setFollowUpText('')
     setFollowUpExchanges([])
@@ -174,18 +205,35 @@ export default function CardPage() {
     <main className={styles.page}>
       <p className={styles.title}>✦ マラキの導き ✦</p>
 
-      {/* 質問入力(revealed 前のみ表示) */}
+      {/* テーマ選択 + 質問入力(revealed 前のみ表示) */}
       {(phase === 'ready' || phase === 'drawing') && (
-        <div className={styles.questionWrap}>
-          <textarea
-            className={styles.questionInput}
-            rows={3}
-            placeholder="悩みや質問を書いてください（省略可）"
-            value={question}
-            onChange={(e) => setQuestion(e.target.value)}
-            disabled={phase === 'drawing'}
-          />
-        </div>
+        <>
+          <div className={styles.themeRow}>
+            {THEMES.map((theme) => (
+              <button
+                key={theme.key}
+                className={`${styles.themeBtn} ${selectedTheme === theme.key ? styles.themeBtnActive : ''}`}
+                onClick={() => setSelectedTheme(selectedTheme === theme.key ? null : theme.key)}
+                disabled={phase === 'drawing'}
+              >
+                {theme.label}
+              </button>
+            ))}
+          </div>
+          <div className={styles.questionWrap}>
+            <textarea
+              className={styles.questionInput}
+              rows={3}
+              placeholder={
+                THEMES.find((t) => t.key === selectedTheme)?.placeholder ??
+                '悩みや質問を書いてください（省略可）'
+              }
+              value={question}
+              onChange={(e) => setQuestion(e.target.value)}
+              disabled={phase === 'drawing'}
+            />
+          </div>
+        </>
       )}
 
       {/* カード */}
