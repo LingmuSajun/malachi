@@ -10,6 +10,7 @@ import {
 import { divine } from '@malachi/prompt'
 import { drawCards } from '@malachi/tarot'
 import { verifyLiffAccessToken } from '../../../../lib/liff/verify'
+import { pushReadingResult } from '../../../../lib/line/push'
 
 const MAX_QUESTION_LEN = 500
 const MAX_USERNAME_LEN = 50
@@ -94,6 +95,15 @@ export async function POST(req: Request) {
   })
 
   await touchConversation(conversation.id)
+
+  // LINEチャットに鑑定結果を送り返す(fire-and-forget)
+  pushReadingResult({
+    lineUserId,
+    cardName: drawn.card.name,
+    cardImage: drawn.card.image,
+    orientation: drawn.orientation,
+    text: result.text,
+  }).catch((err) => console.error('[push] reading result failed:', err))
 
   return Response.json({
     conversationId: conversation.id,
