@@ -142,7 +142,13 @@ ANTHROPIC_API_KEY=sk-ant-...
 # Supabase
 NEXT_PUBLIC_SUPABASE_URL=...
 SUPABASE_SERVICE_ROLE_KEY=...
+
+# アプリの公開URL (鑑定結果のLINEプッシュ通知でカード画像を表示するために必要)
+# 例: https://your-app.vercel.app
+APP_URL=https://...
 ```
+
+`APP_URL` が未設定の場合はカード画像なしでテキストのみ送信される。
 
 ## ローカル開発
 

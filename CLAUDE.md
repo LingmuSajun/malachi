@@ -145,6 +145,7 @@ Read-only な参照で完結する。
 - LIFF API セキュリティ強化 — アクセストークン検証・入力長制限・conversationHistory バリデーション
 - タロット画像の最適化版差し替え — packages/tarot/images/ を削除、public/ を軽量化
 - テーマ選択 UI — 恋愛/仕事・お金/人間関係/今日の一枚の4ボタン、questionCategory をプロンプトに反映
+- 鑑定結果の LINE チャット送り返し — Flex Message でカード名+抜粋をプッシュ通知
 
-次のマイルストーン: 鑑定結果の LINE チャット送り返し or 課金導線(Stripe)
+次のマイルストーン: 課金導線(Stripe)
 詳細タスク: TODO.md を参照
