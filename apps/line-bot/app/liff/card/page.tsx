@@ -17,11 +17,12 @@ interface ReadingResult {
 export default function CardPage() {
   const [phase, setPhase] = useState<Phase>('loading')
   const [lineUserId, setLineUserId] = useState<string | null>(null)
+  const [userName, setUserName] = useState<string | undefined>(undefined)
   const [question, setQuestion] = useState('')
   const [reading, setReading] = useState<ReadingResult | null>(null)
   const [errorMsg, setErrorMsg] = useState('')
   const [flipped, setFlipped] = useState(false)
-  const liffRef = useRef<typeof import('@line/liff')['default'] | null>(null)
+  const liffRef = useRef<(typeof import('@line/liff'))['default'] | null>(null)
 
   useEffect(() => {
     ;(async () => {
@@ -37,6 +38,7 @@ export default function CardPage() {
 
         const profile = await liff.getProfile()
         setLineUserId(profile.userId)
+        setUserName(profile.displayName)
 
         // LINE メッセージから渡された質問を自動入力
         const params = new URLSearchParams(window.location.search)
@@ -62,6 +64,7 @@ export default function CardPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           lineUserId,
+          userName,
           question: question.trim() || '今の私へのメッセージを聞かせてください',
         }),
       })
@@ -126,10 +129,7 @@ export default function CardPage() {
                 reading.orientation === 'reversed' ? styles.reversed : ''
               }`}
             >
-              <img
-                src={`/images/major-arcana/${reading.cardImage}`}
-                alt={reading.cardName}
-              />
+              <img src={`/images/major-arcana/${reading.cardImage}`} alt={reading.cardName} />
             </div>
           )}
         </div>
@@ -137,11 +137,7 @@ export default function CardPage() {
 
       {/* ボタン */}
       {(phase === 'ready' || phase === 'drawing') && (
-        <button
-          className={styles.drawBtn}
-          onClick={handleDraw}
-          disabled={phase === 'drawing'}
-        >
+        <button className={styles.drawBtn} onClick={handleDraw} disabled={phase === 'drawing'}>
           {phase === 'drawing' ? '鑑定中…' : 'カードを引く'}
         </button>
       )}

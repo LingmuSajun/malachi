@@ -1,10 +1,6 @@
 import type { MessageEvent, TextEventMessage } from '@line/bot-sdk'
+import { createFreeSubscription, findUserByLineId, upsertUser } from '@malachi/database'
 import { getLineClient } from '../line/client'
-import {
-  findUserByLineId,
-  upsertUser,
-  createFreeSubscription,
-} from '@malachi/database'
 
 export async function handleMessage(event: MessageEvent): Promise<void> {
   if (event.message.type !== 'text') return

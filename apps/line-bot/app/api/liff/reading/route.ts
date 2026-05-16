@@ -1,24 +1,24 @@
-import { drawCards } from '@malachi/tarot'
-import { divine } from '@malachi/prompt'
-import {
-  findUserByLineId,
-  upsertUser,
-  createFreeSubscription,
-  startConversation,
-  saveReading,
-  touchConversation,
-} from '@malachi/database'
 import type { DrawnCardRecord } from '@malachi/database'
+import {
+  createFreeSubscription,
+  findUserByLineId,
+  saveReading,
+  startConversation,
+  touchConversation,
+  upsertUser,
+} from '@malachi/database'
+import { divine } from '@malachi/prompt'
+import { drawCards } from '@malachi/tarot'
 
 export async function POST(req: Request) {
-  let body: { lineUserId?: string; question?: string }
+  let body: { lineUserId?: string; userName?: string; question?: string }
   try {
     body = await req.json()
   } catch {
     return Response.json({ error: 'Invalid JSON' }, { status: 400 })
   }
 
-  const { lineUserId, question } = body
+  const { lineUserId, userName, question } = body
   if (!lineUserId) {
     return Response.json({ error: 'lineUserId is required' }, { status: 400 })
   }
@@ -35,7 +35,7 @@ export async function POST(req: Request) {
   const resolvedQuestion = question?.trim() || '今の私へのメッセージを聞かせてください'
 
   const result = await divine({
-    userName: undefined,
+    userName: userName?.trim() || undefined,
     question: resolvedQuestion,
     drawnCards: [{ card: drawn.card, orientation: drawn.orientation }],
     spread: 'single',
