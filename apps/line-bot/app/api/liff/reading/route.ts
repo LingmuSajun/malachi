@@ -7,10 +7,12 @@ import {
   touchConversation,
   upsertUser,
 } from '@malachi/database'
-import { divine } from '@malachi/prompt'
+import { divineStart } from '@malachi/prompt'
 import { drawCards } from '@malachi/tarot'
 import { verifyLiffAccessToken } from '../../../../lib/liff/verify'
 import { pushReadingResult } from '../../../../lib/line/push'
+
+export const maxDuration = 60
 
 const MAX_QUESTION_LEN = 500
 const MAX_USERNAME_LEN = 50
@@ -34,13 +36,16 @@ export async function POST(req: Request) {
     return Response.json({ error: 'lineUserId and liffAccessToken are required' }, { status: 400 })
   }
 
-  // LIFFトークンをLINE APIで検証し、self-reportedのlineUserIdと照合
-  const verifiedUserId = await verifyLiffAccessToken(liffAccessToken)
+  // LIFF トークン検証とカード抽選を並列実行
+  const [verifiedUserId, [drawn]] = await Promise.all([
+    verifyLiffAccessToken(liffAccessToken),
+    Promise.resolve(drawCards(1)),
+  ])
+
   if (verifiedUserId !== lineUserId) {
     return Response.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  // 入力長バリデーション
   if (question && question.length > MAX_QUESTION_LEN) {
     return Response.json({ error: 'question too long' }, { status: 400 })
   }
@@ -55,7 +60,6 @@ export async function POST(req: Request) {
   }
 
   const conversation = await startConversation(user.id)
-  const [drawn] = drawCards(1)
 
   const resolvedQuestion = question?.trim() || '今の私へのメッセージを聞かせてください'
 
@@ -65,7 +69,7 @@ export async function POST(req: Request) {
       ? (questionCategory as 'love' | 'relationships' | 'self' | 'work' | 'decision')
       : undefined
 
-  const result = await divine({
+  const startResult = await divineStart({
     userName: userName?.trim() || undefined,
     question: resolvedQuestion,
     questionCategory: resolvedCategory,
@@ -80,38 +84,93 @@ export async function POST(req: Request) {
     position: null,
   }
 
-  await saveReading({
-    conversation_id: conversation.id,
-    user_id: user.id,
-    question: resolvedQuestion,
-    spread_type: 'single',
-    cards: [cardRecord],
-    response_text: result.text,
-    crisis_level: result.crisis.level,
-    input_tokens: result.meta?.inputTokens ?? null,
-    output_tokens: result.meta?.outputTokens ?? null,
-    cache_read_tokens: result.meta?.cacheReadTokens ?? null,
-    cache_creation_tokens: result.meta?.cacheCreationTokens ?? null,
-  })
+  const encoder = new TextEncoder()
+  const send = (controller: ReadableStreamDefaultController, data: object) => {
+    controller.enqueue(encoder.encode(`data: ${JSON.stringify(data)}\n\n`))
+  }
 
-  await touchConversation(conversation.id)
-
-  // LINEチャットに鑑定結果をプッシュ通知(失敗しても鑑定結果は返す)
-  await pushReadingResult({
-    lineUserId,
-    cardName: drawn.card.name,
-    cardImage: drawn.card.image,
-    orientation: drawn.orientation,
-    text: result.text,
-  }).catch((err) => console.error('[push] reading result failed:', err))
-
-  return Response.json({
+  const initPayload = {
+    type: 'init',
     conversationId: conversation.id,
     cardSlug: drawn.card.slug,
     cardName: drawn.card.name,
     cardNameEn: drawn.card.name_en,
     cardImage: drawn.card.image,
     orientation: drawn.orientation,
-    text: result.text,
+  }
+
+  const readableStream = new ReadableStream({
+    async start(controller) {
+      try {
+        send(controller, initPayload)
+
+        let fullText = ''
+        let inputTokens = 0
+        let outputTokens = 0
+        let cacheReadTokens = 0
+        let cacheCreationTokens = 0
+
+        if (startResult.kind === 'crisis') {
+          fullText = startResult.text
+          send(controller, { type: 'text', chunk: fullText })
+        } else {
+          for await (const event of startResult.stream) {
+            if (event.type === 'content_block_delta' && event.delta.type === 'text_delta') {
+              fullText += event.delta.text
+              send(controller, { type: 'text', chunk: event.delta.text })
+            } else if (event.type === 'message_start') {
+              const u = event.message.usage as unknown as Record<string, number>
+              inputTokens = u['input_tokens'] ?? 0
+              cacheReadTokens = u['cache_read_input_tokens'] ?? 0
+              cacheCreationTokens = u['cache_creation_input_tokens'] ?? 0
+            } else if (event.type === 'message_delta') {
+              const u = (event as unknown as { usage: Record<string, number> }).usage
+              outputTokens = u?.['output_tokens'] ?? 0
+            }
+          }
+        }
+
+        await saveReading({
+          conversation_id: conversation.id,
+          user_id: user.id,
+          question: resolvedQuestion,
+          spread_type: 'single',
+          cards: [cardRecord],
+          response_text: fullText,
+          crisis_level: startResult.crisis.level,
+          input_tokens: inputTokens || null,
+          output_tokens: outputTokens || null,
+          cache_read_tokens: cacheReadTokens || null,
+          cache_creation_tokens: cacheCreationTokens || null,
+        })
+        await touchConversation(conversation.id)
+
+        pushReadingResult({
+          lineUserId,
+          cardName: drawn.card.name,
+          cardImage: drawn.card.image,
+          orientation: drawn.orientation,
+          text: fullText,
+        }).catch((err) => console.error('[push] reading result failed:', err))
+
+        send(controller, { type: 'done' })
+      } catch (err) {
+        console.error('[streaming] error:', err)
+        try {
+          send(controller, { type: 'error', message: '鑑定中にエラーが発生しました' })
+        } catch {}
+      } finally {
+        controller.close()
+      }
+    },
+  })
+
+  return new Response(readableStream, {
+    headers: {
+      'Content-Type': 'text/event-stream',
+      'Cache-Control': 'no-cache, no-transform',
+      Connection: 'keep-alive',
+      'X-Accel-Buffering': 'no',
+    },
   })
 }

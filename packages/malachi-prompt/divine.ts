@@ -63,6 +63,49 @@ function mergeWithAI(regexCrisis: CrisisAssessment, aiLevel: CrisisLevel): Crisi
 }
 
 /**
+ * ストリーミング鑑定を開始する。
+ * 危機検知を先に実行し、crisis か stream のどちらかを返す。
+ * stream の場合は呼び出し元が for await でテキストを受け取る。
+ */
+export async function divineStart(request: DivineRequest, options: DivineOptions = {}) {
+  // 危機検知ステップ1: 正規表現
+  const regexCrisis = detectCrisis(request.question)
+  if (regexCrisis.level === 'severe') {
+    return {
+      kind: 'crisis' as const,
+      text: getSevereResponseTemplate(regexCrisis.category, request.userName),
+      crisis: regexCrisis,
+    }
+  }
+
+  const client = options.client ?? new Anthropic()
+
+  // 危機検知ステップ2: AI スクリーニング
+  const aiLevel = await aiCrisisCheck(request.question, client)
+  const crisis = mergeWithAI(regexCrisis, aiLevel)
+
+  if (crisis.level === 'severe') {
+    return {
+      kind: 'crisis' as const,
+      text: getSevereResponseTemplate(crisis.category, request.userName),
+      crisis,
+    }
+  }
+
+  const model = options.model ?? 'claude-sonnet-4-6'
+  const maxTokens = options.maxTokens ?? 1000
+
+  const stream = client.messages.stream({
+    model,
+    max_tokens: maxTokens,
+    system: buildSystemMessages(),
+    messages: buildMessages(request),
+  })
+
+  return { kind: 'stream' as const, stream, crisis, model }
+}
+
+/**
  * 鑑定を実行する。
  */
 export async function divine(
