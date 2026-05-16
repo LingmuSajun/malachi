@@ -1,8 +1,10 @@
 import type { DrawnCardRecord } from '@malachi/database'
 import { findUserByLineId, saveReading, touchConversation } from '@malachi/database'
-import { divine } from '@malachi/prompt'
+import { divineStart } from '@malachi/prompt'
 import { getCardBySlug } from '@malachi/tarot'
 import { verifyLiffAccessToken } from '../../../../lib/liff/verify'
+
+export const maxDuration = 60
 
 type ChatMessage = { role: 'user' | 'assistant'; content: string }
 
@@ -65,12 +67,10 @@ export async function POST(req: Request) {
     return Response.json({ error: 'userName too long' }, { status: 400 })
   }
 
-  // orientation の実行時チェック
   if (!VALID_ORIENTATIONS.has(orientation)) {
     return Response.json({ error: 'Invalid orientation' }, { status: 400 })
   }
 
-  // conversationHistory のサイズ制限
   if (conversationHistory !== undefined) {
     if (!Array.isArray(conversationHistory) || conversationHistory.length > MAX_HISTORY_MESSAGES) {
       return Response.json({ error: 'conversationHistory too long' }, { status: 400 })
@@ -88,7 +88,6 @@ export async function POST(req: Request) {
   const user = await findUserByLineId(lineUserId)
   if (!user) return Response.json({ error: 'User not found' }, { status: 404 })
 
-  // cardSlug の存在チェック
   let card
   try {
     card = getCardBySlug(cardSlug)
@@ -98,7 +97,7 @@ export async function POST(req: Request) {
 
   const resolvedQuestion = followUpQuestion.trim()
 
-  const result = await divine({
+  const startResult = await divineStart({
     userName: userName?.trim() || undefined,
     question: resolvedQuestion,
     drawnCards: [{ card, orientation }],
@@ -113,21 +112,73 @@ export async function POST(req: Request) {
     position: null,
   }
 
-  await saveReading({
-    conversation_id: conversationId,
-    user_id: user.id,
-    question: resolvedQuestion,
-    spread_type: 'single',
-    cards: [cardRecord],
-    response_text: result.text,
-    crisis_level: result.crisis.level,
-    input_tokens: result.meta?.inputTokens ?? null,
-    output_tokens: result.meta?.outputTokens ?? null,
-    cache_read_tokens: result.meta?.cacheReadTokens ?? null,
-    cache_creation_tokens: result.meta?.cacheCreationTokens ?? null,
+  const encoder = new TextEncoder()
+  const send = (controller: ReadableStreamDefaultController, data: object) => {
+    controller.enqueue(encoder.encode(`data: ${JSON.stringify(data)}\n\n`))
+  }
+
+  const readableStream = new ReadableStream({
+    async start(controller) {
+      try {
+        let fullText = ''
+        let inputTokens = 0
+        let outputTokens = 0
+        let cacheReadTokens = 0
+        let cacheCreationTokens = 0
+
+        if (startResult.kind === 'crisis') {
+          fullText = startResult.text
+          send(controller, { type: 'text', chunk: fullText })
+        } else {
+          for await (const event of startResult.stream) {
+            if (event.type === 'content_block_delta' && event.delta.type === 'text_delta') {
+              fullText += event.delta.text
+              send(controller, { type: 'text', chunk: event.delta.text })
+            } else if (event.type === 'message_start') {
+              const u = event.message.usage as unknown as Record<string, number>
+              inputTokens = u['input_tokens'] ?? 0
+              cacheReadTokens = u['cache_read_input_tokens'] ?? 0
+              cacheCreationTokens = u['cache_creation_input_tokens'] ?? 0
+            } else if (event.type === 'message_delta') {
+              const u = (event as unknown as { usage: Record<string, number> }).usage
+              outputTokens = u?.['output_tokens'] ?? 0
+            }
+          }
+        }
+
+        await saveReading({
+          conversation_id: conversationId,
+          user_id: user.id,
+          question: resolvedQuestion,
+          spread_type: 'single',
+          cards: [cardRecord],
+          response_text: fullText,
+          crisis_level: startResult.crisis.level,
+          input_tokens: inputTokens || null,
+          output_tokens: outputTokens || null,
+          cache_read_tokens: cacheReadTokens || null,
+          cache_creation_tokens: cacheCreationTokens || null,
+        })
+        await touchConversation(conversationId)
+
+        send(controller, { type: 'done' })
+      } catch (err) {
+        console.error('[followup streaming] error:', err)
+        try {
+          send(controller, { type: 'error', message: '応答の取得に失敗しました' })
+        } catch {}
+      } finally {
+        controller.close()
+      }
+    },
   })
 
-  await touchConversation(conversationId)
-
-  return Response.json({ text: result.text })
+  return new Response(readableStream, {
+    headers: {
+      'Content-Type': 'text/event-stream',
+      'Cache-Control': 'no-cache, no-transform',
+      Connection: 'keep-alive',
+      'X-Accel-Buffering': 'no',
+    },
+  })
 }

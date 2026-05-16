@@ -85,9 +85,12 @@ export default function CardPage() {
   const [streamingText, setStreamingText] = useState('')
   const [drawingPhaseIndex, setDrawingPhaseIndex] = useState(0)
   const [triviaIndex, setTriviaIndex] = useState(0)
+  const [followUpCurrentQuestion, setFollowUpCurrentQuestion] = useState('')
+  const [followUpStreamingText, setFollowUpStreamingText] = useState('')
   const liffRef = useRef<(typeof import('@line/liff'))['default'] | null>(null)
   const followUpAbortRef = useRef<AbortController | null>(null)
   const streamingTextRef = useRef('')
+  const followUpStreamingRef = useRef('')
 
   useEffect(() => {
     ;(async () => {
@@ -219,9 +222,13 @@ export default function CardPage() {
 
   async function handleFollowUp() {
     if (!lineUserId || !liffAccessToken || !reading || !followUpText.trim() || isFollowingUp) return
-    setIsFollowingUp(true)
+
     const currentQuestion = followUpText.trim()
+    setIsFollowingUp(true)
     setFollowUpText('')
+    setFollowUpCurrentQuestion(currentQuestion)
+    setFollowUpStreamingText('')
+    followUpStreamingRef.current = ''
 
     // 前のリクエストが残っていればキャンセル
     followUpAbortRef.current?.abort()
@@ -244,17 +251,53 @@ export default function CardPage() {
         }),
         signal: controller.signal,
       })
-      if (!res.ok) throw new Error('API error')
-      const data: { text: string } = await res.json()
 
-      setFollowUpExchanges((prev) => [...prev, { question: currentQuestion, answer: data.text }])
-      setChatHistory((prev) => [
-        ...prev,
-        { role: 'user', content: currentQuestion },
-        { role: 'assistant', content: data.text },
-      ])
+      if (!res.ok) throw new Error('API error')
+      if (!res.body) throw new Error('No response body')
+
+      const reader = res.body.getReader()
+      const decoder = new TextDecoder()
+      let buffer = ''
+
+      while (true) {
+        const { done, value } = await reader.read()
+        if (done) break
+
+        buffer += decoder.decode(value, { stream: true })
+        const lines = buffer.split('\n')
+        buffer = lines.pop() ?? ''
+
+        for (const line of lines) {
+          if (!line.startsWith('data: ')) continue
+          let event: { type: string; [key: string]: unknown }
+          try {
+            event = JSON.parse(line.slice(6))
+          } catch {
+            continue
+          }
+
+          if (event.type === 'text') {
+            followUpStreamingRef.current += event.chunk as string
+            setFollowUpStreamingText(followUpStreamingRef.current)
+          } else if (event.type === 'done') {
+            const fullText = followUpStreamingRef.current
+            setFollowUpExchanges((prev) => [
+              ...prev,
+              { question: currentQuestion, answer: fullText },
+            ])
+            setChatHistory((prev) => [
+              ...prev,
+              { role: 'user', content: currentQuestion },
+              { role: 'assistant', content: fullText },
+            ])
+            setFollowUpCurrentQuestion('')
+            setFollowUpStreamingText('')
+          } else if (event.type === 'error') {
+            throw new Error(event.message as string)
+          }
+        }
+      }
     } catch (err) {
-      // 新しい鑑定への切り替えによるキャンセルは無視する
       if (err instanceof DOMException && err.name === 'AbortError') return
       setFollowUpExchanges((prev) => [
         ...prev,
@@ -263,6 +306,8 @@ export default function CardPage() {
           answer: '申し訳ありません、うまく聞き取れませんでした。もう一度お試しください。',
         },
       ])
+      setFollowUpCurrentQuestion('')
+      setFollowUpStreamingText('')
     } finally {
       setIsFollowingUp(false)
     }
@@ -283,6 +328,9 @@ export default function CardPage() {
     setFollowUpExchanges([])
     setStreamingText('')
     streamingTextRef.current = ''
+    setFollowUpCurrentQuestion('')
+    setFollowUpStreamingText('')
+    followUpStreamingRef.current = ''
   }
 
   if (phase === 'loading') {
@@ -404,6 +452,25 @@ export default function CardPage() {
                 </div>
               ))}
 
+              {/* ストリーミング中の仮バブル */}
+              {isFollowingUp && followUpCurrentQuestion && (
+                <div className={styles.exchange}>
+                  <div className={styles.chatQ}>{followUpCurrentQuestion}</div>
+                  {followUpStreamingText ? (
+                    <div className={styles.chatA}>
+                      {followUpStreamingText}
+                      <span className={styles.streamingCursor}>▌</span>
+                    </div>
+                  ) : (
+                    <div className={styles.chatThinking}>
+                      <span className={styles.thinkingDot} />
+                      <span className={styles.thinkingDot} />
+                      <span className={styles.thinkingDot} />
+                    </div>
+                  )}
+                </div>
+              )}
+
               <p className={styles.divider}>— マラキにもっと聞く —</p>
               <textarea
                 className={styles.questionInput}
@@ -419,9 +486,13 @@ export default function CardPage() {
                   onClick={handleFollowUp}
                   disabled={isFollowingUp || !followUpText.trim()}
                 >
-                  {isFollowingUp ? '考え中…' : '聞く'}
+                  聞く
                 </button>
-                <button className={styles.newReadingBtn} onClick={handleNewReading}>
+                <button
+                  className={styles.newReadingBtn}
+                  onClick={handleNewReading}
+                  disabled={isFollowingUp}
+                >
                   新しい鑑定へ
                 </button>
               </div>

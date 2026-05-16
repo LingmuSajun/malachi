@@ -22,22 +22,21 @@ malachi/
 
 ## クイックスタート
 
-### devcontainer / Docker
+```bash
+bash scripts/setup.sh        # 依存関係インストール・初期設定(冪等)
+# .env.local に各種 API キーを設定後:
+pnpm dev                     # LINE Bot / LIFF 開発サーバー起動
+```
 
-VS Code の Dev Containers または `docker compose up` で起動すると、セットアップが自動実行されます。
-起動後に `.env.local` の `ANTHROPIC_API_KEY` を設定してください。
+LINE Webhook のローカルテストは ngrok 等でトンネルし、LINE Developers Console の Webhook URL を更新してください。
 
-### ローカル / CI
+### 品質評価
 
 ```bash
-bash scripts/setup.sh
-# .env.local に ANTHROPIC_API_KEY を設定後:
 pnpm eval:normal    # 通常鑑定の品質評価
 pnpm eval:crisis    # 危機検知の評価
 pnpm eval:injection # プロンプトインジェクション耐性の評価
 ```
-
-`scripts/setup.sh` は冪等です。`.env.local` の上書きは行いません。
 
 ## ドキュメント
 
