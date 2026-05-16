@@ -6,13 +6,23 @@
   align-items: center;
   padding: 32px 20px 48px;
   gap: 24px;
-  background: radial-gradient(ellipse at top, #1a0e2e 0%, #0d0a1a 70%);
+  background:
+    radial-gradient(ellipse 90% 55% at 50% 0%, rgba(107, 63, 160, 0.32) 0%, transparent 60%),
+    radial-gradient(ellipse 55% 40% at 88% 65%, rgba(58, 18, 100, 0.2) 0%, transparent 50%),
+    radial-gradient(ellipse 40% 30% at 12% 78%, rgba(40, 15, 80, 0.16) 0%, transparent 50%), #07040f;
 }
 
+/* ---- title ---- */
 .title {
-  font-size: 1rem;
-  letter-spacing: 0.15em;
-  color: #b89fd4;
+  font-size: 0.88rem;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  background: linear-gradient(90deg, #8b6cb0, #d4b4f0, #f0e2c8, #d4b4f0, #8b6cb0);
+  background-size: 300% auto;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: shimmer 5s linear infinite;
   text-align: center;
 }
 
@@ -26,17 +36,17 @@
 }
 
 .themeBtn {
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(184, 159, 212, 0.25);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(184, 159, 212, 0.2);
   border-radius: 999px;
   padding: 10px 8px;
   font-size: 0.88rem;
-  color: rgba(240, 230, 211, 0.6);
+  color: rgba(240, 230, 211, 0.55);
   cursor: pointer;
   transition:
-    background 0.18s,
-    border-color 0.18s,
-    color 0.18s;
+    background 0.2s,
+    border-color 0.2s,
+    color 0.2s;
   letter-spacing: 0.04em;
 }
 
@@ -47,9 +57,10 @@
 }
 
 .themeBtnActive {
-  background: rgba(107, 63, 160, 0.45);
+  background: rgba(107, 63, 160, 0.4);
   border-color: #a06bf0;
   color: #f0e6d3;
+  box-shadow: 0 0 14px rgba(107, 63, 160, 0.35);
 }
 
 /* ---- question input ---- */
@@ -60,8 +71,8 @@
 
 .questionInput {
   width: 100%;
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(184, 159, 212, 0.35);
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(184, 159, 212, 0.3);
   border-radius: 12px;
   padding: 12px 16px;
   color: #f0e6d3;
@@ -69,27 +80,66 @@
   outline: none;
   box-sizing: border-box;
   resize: none;
+  transition:
+    border-color 0.2s,
+    box-shadow 0.2s;
+}
+
+.questionInput:focus {
+  border-color: rgba(184, 159, 212, 0.55);
+  box-shadow: 0 0 16px rgba(107, 63, 160, 0.2);
 }
 
 .questionInput::placeholder {
-  color: rgba(240, 230, 211, 0.35);
+  color: rgba(240, 230, 211, 0.3);
 }
 
 /* ---- draw button ---- */
 .drawBtn {
-  background: linear-gradient(135deg, #6b3fa0, #a06bf0);
-  color: #fff;
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(135deg, #5c2d9e 0%, #9456e8 50%, #5c2d9e 100%);
+  background-size: 200% auto;
+  color: rgba(255, 255, 255, 0.95);
   border: none;
   border-radius: 999px;
-  padding: 14px 36px;
-  font-size: 1.05rem;
-  letter-spacing: 0.08em;
+  padding: 15px 42px;
+  font-size: 1rem;
+  letter-spacing: 0.12em;
   cursor: pointer;
-  transition: opacity 0.2s;
+  box-shadow:
+    0 4px 20px rgba(107, 63, 160, 0.55),
+    0 0 40px rgba(107, 63, 160, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.14);
+  transition:
+    box-shadow 0.3s,
+    transform 0.15s;
 }
+
+.drawBtn:active {
+  transform: scale(0.97);
+}
+
+.drawBtn::after {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -60%;
+  width: 40%;
+  height: 200%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.22), transparent);
+  transform: skewX(-25deg);
+  animation: btnGleam 3.5s ease-in-out infinite;
+}
+
 .drawBtn:disabled {
-  opacity: 0.45;
+  opacity: 0.38;
   cursor: default;
+  box-shadow: none;
+}
+
+.drawBtn:disabled::after {
+  display: none;
 }
 
 /* ---- card flip ---- */
@@ -104,7 +154,7 @@
   height: 100%;
   position: relative;
   transform-style: preserve-3d;
-  transition: transform 0.9s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: transform 0.95s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .card.flipped {
@@ -117,20 +167,117 @@
   border-radius: 14px;
   backface-visibility: hidden;
   overflow: hidden;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.7),
+    0 0 48px rgba(107, 63, 160, 0.18);
 }
 
+/* ---- card back — CSS-only mystical design ---- */
 .cardBack {
-  background: linear-gradient(160deg, #1e1040 0%, #2d1a5e 50%, #1e1040 100%);
+  background:
+    /* Scattered micro-stars */
+    radial-gradient(circle, rgba(255, 255, 255, 0.5) 1.5px, transparent 1.5px) 22px 18px / 55px 60px,
+    radial-gradient(circle, rgba(184, 159, 212, 0.4) 1px, transparent 1px) 5px 42px / 44px 52px,
+    radial-gradient(circle, rgba(255, 255, 255, 0.3) 1px, transparent 1px) 40px 8px / 62px 48px,
+    radial-gradient(circle, rgba(184, 159, 212, 0.25) 1px, transparent 1px) 62px 34px / 50px 56px,
+    /* Aurora glow */
+    radial-gradient(ellipse 75% 55% at 50% 35%, rgba(100, 55, 170, 0.28) 0%, transparent 70%),
+    radial-gradient(ellipse 50% 35% at 50% 85%, rgba(50, 20, 90, 0.2) 0%, transparent 60%),
+    /* Base */ linear-gradient(168deg, #18093a 0%, #220d50 50%, #18093a 100%);
+  border: 1px solid rgba(184, 159, 212, 0.28);
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 1px solid rgba(184, 159, 212, 0.25);
+  position: relative;
 }
 
+/* Inner decorative frame */
+.cardBack::before {
+  content: '';
+  position: absolute;
+  inset: 11px;
+  border: 1px solid rgba(184, 159, 212, 0.13);
+  border-radius: 7px;
+  pointer-events: none;
+}
+
+/* Central glowing orb */
+.cardBack::after {
+  content: '';
+  position: absolute;
+  width: 70px;
+  height: 70px;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle,
+    rgba(240, 220, 255, 0.55) 0%,
+    rgba(160, 107, 240, 0.35) 32%,
+    rgba(107, 63, 160, 0.12) 60%,
+    transparent 75%
+  );
+  box-shadow:
+    0 0 18px rgba(160, 107, 240, 0.75),
+    0 0 36px rgba(160, 107, 240, 0.4),
+    0 0 72px rgba(107, 63, 160, 0.2);
+  animation: orbPulse 3.2s ease-in-out infinite;
+  pointer-events: none;
+}
+
+/* Star burst + orbit ring overlay */
 .backSymbol {
-  font-size: 64px;
-  opacity: 0.5;
+  position: absolute;
+  display: block;
+  width: 44px;
+  height: 44px;
+  /* no content — purely decorative */
+}
+
+/* 12-ray star burst */
+.backSymbol::before {
+  content: '';
+  position: absolute;
+  inset: -8px;
+  border-radius: 50%;
+  background: conic-gradient(
+    from 0deg,
+    transparent 0deg 13deg,
+    rgba(184, 159, 212, 0.2) 13deg 17deg,
+    transparent 17deg 43deg,
+    rgba(184, 159, 212, 0.2) 43deg 47deg,
+    transparent 47deg 73deg,
+    rgba(184, 159, 212, 0.2) 73deg 77deg,
+    transparent 77deg 103deg,
+    rgba(184, 159, 212, 0.2) 103deg 107deg,
+    transparent 107deg 133deg,
+    rgba(184, 159, 212, 0.2) 133deg 137deg,
+    transparent 137deg 163deg,
+    rgba(184, 159, 212, 0.2) 163deg 167deg,
+    transparent 167deg 193deg,
+    rgba(184, 159, 212, 0.2) 193deg 197deg,
+    transparent 197deg 223deg,
+    rgba(184, 159, 212, 0.2) 223deg 227deg,
+    transparent 227deg 253deg,
+    rgba(184, 159, 212, 0.2) 253deg 257deg,
+    transparent 257deg 283deg,
+    rgba(184, 159, 212, 0.2) 283deg 287deg,
+    transparent 287deg 313deg,
+    rgba(184, 159, 212, 0.2) 313deg 317deg,
+    transparent 317deg 360deg
+  );
+  animation: rotateSlow 28s linear infinite;
+}
+
+/* Outer orbit ring */
+.backSymbol::after {
+  content: '';
+  position: absolute;
+  inset: -22px;
+  border-radius: 50%;
+  border: 1px solid transparent;
+  border-top-color: rgba(184, 159, 212, 0.45);
+  border-right-color: rgba(184, 159, 212, 0.2);
+  border-bottom-color: rgba(184, 159, 212, 0.08);
+  animation: rotateSlow 10s linear infinite reverse;
 }
 
 .cardFront {
@@ -153,40 +300,59 @@
 .result {
   max-width: 360px;
   width: 100%;
-  animation: fadeUp 0.6s ease both;
+  animation: fadeUp 0.7s ease both;
 }
 
 .cardLabel {
   text-align: center;
-  margin-bottom: 12px;
+  margin-bottom: 14px;
 }
 
 .cardName {
-  font-size: 1.15rem;
-  color: #d4b4f0;
-  letter-spacing: 0.05em;
+  font-size: 1.18rem;
+  letter-spacing: 0.1em;
+  background: linear-gradient(90deg, #c09ee8, #f0e6d3, #e8cef8, #c09ee8);
+  background-size: 250% auto;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: shimmer 4s linear infinite;
 }
 
 .orientationBadge {
   display: inline-block;
   margin-left: 8px;
-  font-size: 0.7rem;
-  background: rgba(184, 159, 212, 0.2);
+  font-size: 0.68rem;
+  background: rgba(184, 159, 212, 0.15);
+  border: 1px solid rgba(184, 159, 212, 0.25);
   border-radius: 4px;
-  padding: 2px 7px;
+  padding: 2px 8px;
   color: #b89fd4;
   vertical-align: middle;
+  letter-spacing: 0.04em;
 }
 
 .readingText {
-  background: rgba(255, 255, 255, 0.04);
-  border-left: 3px solid #7c4dbb;
-  border-radius: 0 12px 12px 0;
-  padding: 16px 18px;
+  position: relative;
+  background: linear-gradient(180deg, rgba(107, 63, 160, 0.08) 0%, rgba(255, 255, 255, 0.025) 100%);
+  border: 1px solid rgba(184, 159, 212, 0.15);
+  border-radius: 16px;
+  padding: 18px 20px 20px;
   font-size: 0.92rem;
-  line-height: 1.85;
+  line-height: 1.9;
   white-space: pre-wrap;
-  color: #e8d9c5;
+  color: rgba(240, 225, 205, 0.92);
+  letter-spacing: 0.02em;
+}
+
+.readingText::before {
+  content: '✦  ✦  ✦';
+  display: block;
+  text-align: center;
+  font-size: 0.58rem;
+  letter-spacing: 0.35em;
+  color: rgba(184, 159, 212, 0.38);
+  margin-bottom: 14px;
 }
 
 @keyframes fadeUp {
@@ -214,7 +380,7 @@
   text-align: center;
   font-size: 0.75rem;
   letter-spacing: 0.12em;
-  color: rgba(184, 159, 212, 0.5);
+  color: rgba(184, 159, 212, 0.45);
 }
 
 .exchange {
@@ -225,7 +391,8 @@
 
 .chatQ {
   align-self: flex-end;
-  background: rgba(107, 63, 160, 0.35);
+  background: rgba(107, 63, 160, 0.32);
+  border: 1px solid rgba(160, 107, 240, 0.2);
   border-radius: 14px 14px 4px 14px;
   padding: 10px 14px;
   font-size: 0.88rem;
@@ -235,14 +402,15 @@
 }
 
 .chatA {
-  background: rgba(255, 255, 255, 0.04);
-  border-left: 3px solid #7c4dbb;
-  border-radius: 0 12px 12px 0;
-  padding: 12px 16px;
+  position: relative;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(184, 159, 212, 0.12);
+  border-radius: 16px;
+  padding: 14px 16px;
   font-size: 0.88rem;
   line-height: 1.85;
   white-space: pre-wrap;
-  color: #e8d9c5;
+  color: rgba(240, 225, 205, 0.88);
 }
 
 .btnRow {
@@ -252,7 +420,9 @@
 
 .sendBtn {
   flex: 1;
-  background: linear-gradient(135deg, #6b3fa0, #a06bf0);
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(135deg, #5c2d9e, #9456e8);
   color: #fff;
   border: none;
   border-radius: 999px;
@@ -260,25 +430,107 @@
   font-size: 0.95rem;
   letter-spacing: 0.06em;
   cursor: pointer;
-  transition: opacity 0.2s;
+  box-shadow: 0 3px 16px rgba(107, 63, 160, 0.45);
+  transition:
+    opacity 0.2s,
+    box-shadow 0.2s;
 }
 
 .sendBtn:disabled {
-  opacity: 0.4;
+  opacity: 0.38;
   cursor: default;
+  box-shadow: none;
 }
 
 .newReadingBtn {
   flex: 1;
   background: transparent;
-  color: #b89fd4;
-  border: 1px solid rgba(184, 159, 212, 0.4);
+  color: rgba(184, 159, 212, 0.8);
+  border: 1px solid rgba(184, 159, 212, 0.3);
   border-radius: 999px;
   padding: 12px 20px;
   font-size: 0.95rem;
   letter-spacing: 0.06em;
   cursor: pointer;
-  transition: opacity 0.2s;
+  transition:
+    border-color 0.2s,
+    color 0.2s;
+}
+
+.newReadingBtn:hover {
+  border-color: rgba(184, 159, 212, 0.55);
+  color: #d4b4f0;
+}
+
+/* ---- drawing info (loading state) ---- */
+.drawingInfo {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  max-width: 300px;
+  width: 100%;
+}
+
+.phaseMessage {
+  color: rgba(184, 159, 212, 0.85);
+  font-size: 0.88rem;
+  letter-spacing: 0.08em;
+  text-align: center;
+  animation: fadeIn 0.4s ease both;
+}
+
+.triviaBox {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(184, 159, 212, 0.15);
+  border-radius: 14px;
+  padding: 14px 16px;
+  width: 100%;
+  animation: fadeIn 0.4s ease both;
+}
+
+.triviaLabel {
+  font-size: 0.68rem;
+  letter-spacing: 0.14em;
+  color: rgba(184, 159, 212, 0.45);
+  text-align: center;
+  margin-bottom: 8px;
+}
+
+.triviaText {
+  font-size: 0.82rem;
+  line-height: 1.75;
+  color: rgba(240, 230, 211, 0.65);
+  text-align: center;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ---- streaming cursor ---- */
+.streamingCursor {
+  display: inline-block;
+  color: #b89fd4;
+  animation: blink 0.8s step-end infinite;
+  margin-left: 1px;
+}
+
+@keyframes blink {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0;
+  }
 }
 
 /* ---- loading / error ---- */
@@ -293,18 +545,79 @@
   text-align: center;
 }
 
-.spinner {
-  width: 40px;
-  height: 40px;
-  border: 3px solid rgba(184, 159, 212, 0.2);
-  border-top-color: #b89fd4;
+/* ---- mystic spinner (replaces plain spinner) ---- */
+.mysticSpinner {
+  position: relative;
+  width: 52px;
+  height: 52px;
   border-radius: 50%;
-  animation: spin 0.9s linear infinite;
+  background: radial-gradient(circle, rgba(212, 180, 240, 0.14) 0%, transparent 70%);
+  animation: orbPulse 2.2s ease-in-out infinite;
 }
 
+.mysticSpinner::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  border-top-color: rgba(184, 159, 212, 0.9);
+  border-right-color: rgba(184, 159, 212, 0.35);
+  animation: spin 1.5s linear infinite;
+}
+
+.mysticSpinner::after {
+  content: '';
+  position: absolute;
+  inset: 8px;
+  border-radius: 50%;
+  border: 1.5px solid transparent;
+  border-bottom-color: rgba(160, 107, 240, 0.85);
+  border-left-color: rgba(160, 107, 240, 0.3);
+  animation: spin 0.9s linear infinite reverse;
+}
+
+/* ---- shared keyframes ---- */
 @keyframes spin {
   to {
     transform: rotate(360deg);
+  }
+}
+
+@keyframes orbPulse {
+  0%,
+  100% {
+    opacity: 0.7;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.07);
+  }
+}
+
+@keyframes rotateSlow {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes shimmer {
+  from {
+    background-position: 0% center;
+  }
+  to {
+    background-position: 300% center;
+  }
+}
+
+@keyframes btnGleam {
+  0% {
+    left: -60%;
+  }
+  35%,
+  100% {
+    left: 130%;
   }
 }
 

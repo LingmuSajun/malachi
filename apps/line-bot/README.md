@@ -43,7 +43,7 @@ LINE Messaging API からのイベントを受け取る。
 
 ### `POST /api/liff/reading`
 
-LIFF からカード鑑定リクエストを受け取る。
+LIFF からカード鑑定リクエストを受け取る。**SSE (Server-Sent Events) でストリーミングレスポンスを返す。**
 
 **リクエスト**:
 
@@ -60,19 +60,26 @@ LIFF からカード鑑定リクエストを受け取る。
 `questionCategory` は省略可。`love` / `work` / `relationships` / `self` / `decision` のいずれか。
 指定するとマラキの解釈がテーマに特化する(カードの `contexts` フィールドを使用)。
 
-**レスポンス**:
+**レスポンス**: `Content-Type: text/event-stream`
 
-```json
-{
-  "conversationId": "uuid",
-  "cardSlug": "fool",
-  "cardName": "愚者",
-  "cardNameEn": "The Fool",
-  "cardImage": "00-fool.jpg",
-  "orientation": "upright",
-  "text": "マラキの鑑定テキスト..."
-}
 ```
+data: {"type":"init","conversationId":"uuid","cardSlug":"fool","cardName":"愚者","cardNameEn":"The Fool","cardImage":"00-fool.jpg","orientation":"upright"}
+
+data: {"type":"text","chunk":"マラキの"}
+
+data: {"type":"text","chunk":"鑑定テキスト..."}
+
+data: {"type":"done"}
+```
+
+| イベント | タイミング         | 内容                           |
+| -------- | ------------------ | ------------------------------ |
+| `init`   | ストリーム開始直後 | カードメタデータ一式           |
+| `text`   | 生成中(複数回)     | テキストの断片                 |
+| `done`   | DB保存完了後       | 終了シグナル                   |
+| `error`  | エラー発生時       | `message` フィールドにエラー文 |
+
+LIFF トークン検証とカード抽選は並列実行される。危機対応テンプレートの場合は `text` が1イベントで全文送信される。
 
 ### `POST /api/liff/followup`
 
