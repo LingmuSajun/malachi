@@ -1,6 +1,6 @@
 # Malachi Tarot Package
 
-Malachi の大アルカナ22枚分のデータと画像。
+Malachi の大アルカナ22枚分のデータ。
 
 ## ディレクトリ構成
 
@@ -8,91 +8,28 @@ Malachi の大アルカナ22枚分のデータと画像。
 packages/tarot/
 ├── data/
 │   └── major-arcana.yaml      # 22枚の意味データ(編集対象)
-├── images/
-│   └── major-arcana/           # ライダー版PD画像(1909年) — git管理
-│       └── optimized/          # LINE用に最適化済み画像 — git管理
 ├── types/
-│   └── card.ts                 # TypeScript型定義
-├── loader.ts                   # yamlロード・カード抽出ヘルパー
-└── README.md                   # このファイル
+│   └── card.ts                # TypeScript型定義
+└── loader.ts                  # yamlロード・カード取得ヘルパー
 ```
 
-## 画像について
-
-画像はリポジトリに含まれているため、**追加の準備は不要**。
-
-- `images/major-arcana/` — Wikimedia Commons の1909年版オリジナルスキャン(元画像)
-- `images/major-arcana/optimized/` — LINE Flex Message 用(幅1024px / JPEG品質85%)にリサイズ済み
-
-小アルカナ追加(Phase 3)など画像を追加・更新する場合は、その時点でスクリプトを整備すること。
-
-## CDN へのアップロード(本番)
-
-最適化済み画像を Supabase Storage または Vercel Blob にアップロードし、得られた公開URLを LINE Flex Message の `hero.url` で参照する。
-
-## ライセンス上の注意
-
-- **画像**: A.E. Waite と Pamela Colman Smith による1909年初版のライダー・ウェイト・タロット。Smith は1951年没。日本・米国ともに著作者の死後70年経過済みでパブリックドメイン化。
-- **U.S. Games Systems社の再販版(1971年〜)とは別物**。再販版にはリマスター部分の権利が及ぶため、必ずWikimedia Commons の1909年版オリジナルスキャンを使うこと。
+カード画像は `apps/line-bot/public/images/major-arcana/` で管理。
 
 ## データの使い方
 
-### 基本的な読み込み
-
 ```typescript
-import { loadMajorArcana, getCardById, drawCards } from './packages/tarot/loader'
+import { loadMajorArcana, getCardById, getCardBySlug, drawCards } from '@malachi/tarot'
 
-// 全22枚をロード
-const data = loadMajorArcana()
-console.log(data.cards.length) // 22
+// ランダムに1枚引く(正逆位置付き)
+const [drawn] = drawCards(1)
+// { card: TarotCard, orientation: "upright" | "reversed" }
 
-// IDから取得
+// IDまたはslugで取得
 const death = getCardById(13)
-console.log(death.name) // "死神"
-
-// ランダムに3枚引く(正逆位置付き)
-const reading = drawCards(3)
-// [{ card: TarotCard, orientation: "upright" | "reversed" }, ...]
+const fool = getCardBySlug('fool')
 ```
 
-### マラキの応答生成での使用例
-
-```typescript
-import Anthropic from '@anthropic-ai/sdk'
-import { drawCards } from './packages/tarot/loader'
-
-const anthropic = new Anthropic()
-
-async function generateReading(userQuestion: string): Promise<string> {
-  // 1枚引く
-  const [drawn] = drawCards(1)
-  const { card, orientation } = drawn
-
-  // カード情報を System プロンプトの一部として渡す
-  const cardContext = `
-引かれたカード: ${card.name} (${orientation === 'upright' ? '正位置' : '逆位置'})
-象徴: ${card.symbolism.keywords.join(', ')}
-キーワード: ${
-    orientation === 'upright' ? card.keywords_upright.join(', ') : card.keywords_reversed.join(', ')
-  }
-
-恋愛文脈の解釈:
-${orientation === 'upright' ? card.contexts.love.upright : card.contexts.love.reversed}
-
-語り口の指針:
-${card.voice_hint}
-  `.trim()
-
-  const response = await anthropic.messages.create({
-    model: 'claude-sonnet-4-6',
-    max_tokens: 1024,
-    system: `あなたは「マラキ」、最後の預言者。詳細は別途指定の人格仕様書に従う。\n\n${cardContext}`,
-    messages: [{ role: 'user', content: userQuestion }],
-  })
-
-  return response.content[0].type === 'text' ? response.content[0].text : ''
-}
-```
+`@malachi/prompt` の `divine()` / `divineStart()` に渡すのが主な用途。
 
 ## yamlデータのスキーマ
 
@@ -112,8 +49,8 @@ ${card.voice_hint}
 | `positions`         | object   | スプレッド位置別ヒント(任意)                          |
 | `voice_hint`        | string   | マラキの語り口ガイド                                  |
 
-## 拡張ロードマップ
+## ライセンス上の注意
 
-- **Phase 1 (現在)**: 大アルカナ22枚、ライダー版そのまま使用
-- **Phase 2**: 小アルカナ56枚追加、フル78枚化
-- **Phase 3**: マラキ世界観でのオリジナルカード(色調補正 or 再描画)
+A.E. Waite と Pamela Colman Smith による1909年初版のライダー・ウェイト・タロット。Smith は1951年没。日本・米国ともに著作者の死後70年経過済みでパブリックドメイン化。
+
+**U.S. Games Systems 社の再販版(1971年〜)とは別物**。再販版にはリマスター部分の権利が及ぶため、必ず Wikimedia Commons の1909年版オリジナルスキャンを使うこと。
