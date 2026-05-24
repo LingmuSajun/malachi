@@ -7,6 +7,7 @@ interface ReadingPushParams {
   cardImage: string
   orientation: 'upright' | 'reversed'
   text: string
+  readingId?: string
 }
 
 function extractExcerpt(text: string, maxLen = 120): string {
@@ -20,6 +21,7 @@ export async function pushReadingResult({
   cardImage,
   orientation,
   text,
+  readingId,
 }: ReadingPushParams): Promise<void> {
   const appUrl = process.env.APP_URL?.replace(/\/$/, '')
   const orientationLabel = orientation === 'upright' ? '正位置' : '逆位置'
@@ -76,6 +78,8 @@ export async function pushReadingResult({
       ]
     : [header, cardLabel, separator, excerptText]
 
+  const historyUrl = appUrl && readingId ? `${appUrl}/liff/history/${readingId}` : null
+
   await getLineClient().pushMessage({
     to: lineUserId,
     messages: [
@@ -92,6 +96,30 @@ export async function pushReadingResult({
             paddingAll: '20px',
             contents,
           },
+          ...(historyUrl
+            ? {
+                footer: {
+                  type: 'box',
+                  layout: 'vertical',
+                  backgroundColor: '#1a0e2e',
+                  paddingAll: '12px',
+                  paddingTop: '0px',
+                  contents: [
+                    {
+                      type: 'button',
+                      action: {
+                        type: 'uri',
+                        label: '鑑定を見返す',
+                        uri: historyUrl,
+                      } as messagingApi.URIAction,
+                      style: 'secondary',
+                      color: '#2d1a4a',
+                      height: 'sm',
+                    } as messagingApi.FlexButton,
+                  ],
+                } as messagingApi.FlexBox,
+              }
+            : {}),
         },
       },
     ],

@@ -130,7 +130,7 @@ export async function POST(req: Request) {
           }
         }
 
-        await saveReading({
+        const reading = await saveReading({
           conversation_id: conversation.id,
           user_id: user.id,
           question: resolvedQuestion,
@@ -151,9 +151,10 @@ export async function POST(req: Request) {
           cardImage: drawn.card.image,
           orientation: drawn.orientation,
           text: fullText,
+          readingId: reading.id,
         }).catch((err) => console.error('[push] reading result failed:', err))
 
-        send(controller, { type: 'done' })
+        send(controller, { type: 'done', readingId: reading.id })
       } catch (err) {
         console.error('[streaming] error:', err)
         try {
