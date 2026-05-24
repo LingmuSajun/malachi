@@ -81,6 +81,18 @@ data: {"type":"done"}
 
 LIFF トークン検証とカード抽選は並列実行される。危機対応テンプレートの場合は `text` が1イベントで全文送信される。
 
+`done` イベントには `readingId` フィールドが含まれる。LINE チャットに送信される Flex Message のフッターにこの ID を使ったリンクが付与される。
+
+### `GET /api/liff/history/:reading_id`
+
+保存済み鑑定を取得する。
+
+**クエリパラメータ**: `lineUserId`, `liffAccessToken`
+
+**レスポンス**: 鑑定データ JSON。`cards` 配列の各要素に `cardName`・`cardImage` が付加される。
+
+所有者チェック: `user_id` が一致しない場合は 404 を返す。
+
 ### `POST /api/liff/followup`
 
 鑑定結果に対する追加質問を処理する。新しいカードは引かず、同じカードの文脈で会話を継続。**SSE (Server-Sent Events) でストリーミングレスポンスを返す。**

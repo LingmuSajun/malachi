@@ -131,3 +131,16 @@ export async function getRecentReadings(userId: string, limit = 10): Promise<Rea
   if (error) throw error
   return data ?? []
 }
+
+/** 鑑定を ID で取得(所有者チェック込み) */
+export async function getReadingById(id: string, userId: string): Promise<ReadingRow | null> {
+  const { data, error } = await db
+    .from('readings')
+    .select()
+    .eq('id', id)
+    .eq('user_id', userId)
+    .maybeSingle()
+
+  if (error) throw error
+  return data
+}
