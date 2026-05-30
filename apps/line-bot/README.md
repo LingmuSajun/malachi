@@ -53,17 +53,22 @@ LIFF からカード鑑定リクエストを受け取る。**SSE (Server-Sent Ev
   "liffAccessToken": "eyJ...",
   "userName": "美咲",
   "question": "彼の気持ちが知りたい",
-  "questionCategory": "love"
+  "questionCategory": "love",
+  "spread": "single"
 }
 ```
 
 `questionCategory` は省略可。`love` / `work` / `relationships` / `self` / `decision` のいずれか。
 指定するとマラキの解釈がテーマに特化する(カードの `contexts` フィールドを使用)。
 
+`spread` は省略可。`single`(1枚引き・デフォルト) または `three`(3枚引き = 過去 / 現在 / 未来)。
+`three` の場合 3 枚を引き、各カードに `past` / `present` / `future` の位置を割り当て、
+マラキは 3 枚を一つの物語として読む(出力上限を引き上げ、900〜1300字目安)。
+
 **レスポンス**: `Content-Type: text/event-stream`
 
 ```
-data: {"type":"init","conversationId":"uuid","cardSlug":"fool","cardName":"愚者","cardNameEn":"The Fool","cardImage":"00-fool.jpg","orientation":"upright"}
+data: {"type":"init","conversationId":"uuid","spread":"single","cards":[{"cardSlug":"fool","cardName":"愚者","cardNameEn":"The Fool","cardImage":"00-fool.jpg","orientation":"upright","position":null}],"cardSlug":"fool","cardName":"愚者","cardNameEn":"The Fool","cardImage":"00-fool.jpg","orientation":"upright"}
 
 data: {"type":"text","chunk":"マラキの"}
 
@@ -78,6 +83,9 @@ data: {"type":"done"}
 | `text`   | 生成中(複数回)     | テキストの断片                 |
 | `done`   | DB保存完了後       | 終了シグナル                   |
 | `error`  | エラー発生時       | `message` フィールドにエラー文 |
+
+`init` イベントの `cards` 配列が主データ(1枚引きは1要素、3枚引きは3要素で各 `position` 付き)。
+トップレベルの `cardSlug` / `cardName` / `orientation` 等は 1枚引き向けの後方互換フィールド。
 
 LIFF トークン検証とカード抽選は並列実行される。危機対応テンプレートの場合は `text` が1イベントで全文送信される。
 

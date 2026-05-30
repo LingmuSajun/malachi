@@ -50,6 +50,15 @@ export function detectCategory(question: string): NonNullable<DivineRequest['que
 /**
  * 1枚のカードの情報を、マラキが解釈できる形式の文字列に整形する。
  */
+/** スプレッド位置の日本語ラベル */
+const POSITION_LABELS: Record<string, string> = {
+  past: '過去',
+  present: '現在',
+  future: '未来',
+  self_mind: '自分の気持ち',
+  other_mind: '相手の気持ち',
+}
+
 function formatCardForPrompt(
   drawn: DrawnCard,
   category: DivineRequest['questionCategory'] = 'love'
@@ -68,9 +77,11 @@ function formatCardForPrompt(
   const positionHint =
     position && card.positions?.[position as keyof NonNullable<typeof card.positions>]
 
+  const positionLabel = position ? (POSITION_LABELS[position] ?? position) : null
+
   return [
     `カード: ${card.name} (${card.name_en}) ${orientationLabel}`,
-    position ? `位置: ${position}` : null,
+    positionLabel ? `位置: ${positionLabel}` : null,
     `象徴の核: ${card.symbolism.keywords.join('、')}`,
     `現れているキーワード: ${keywords.join('、')}`,
     `この文脈での意味: ${categoryText}`,
@@ -97,11 +108,12 @@ export function buildMessages(
   const resolvedCategory = request.questionCategory ?? detectCategory(request.question)
 
   const cardSection = request.drawnCards
-    .map((d, i) =>
-      request.drawnCards.length > 1
-        ? `【${i + 1}枚目】\n${formatCardForPrompt(d, resolvedCategory)}`
-        : formatCardForPrompt(d, resolvedCategory)
-    )
+    .map((d, i) => {
+      if (request.drawnCards.length === 1) return formatCardForPrompt(d, resolvedCategory)
+      // 複数枚の場合、位置ラベル(過去/現在/未来 等)があれば見出しに使う
+      const label = d.position ? (POSITION_LABELS[d.position] ?? `${i + 1}枚目`) : `${i + 1}枚目`
+      return `【${label}】\n${formatCardForPrompt(d, resolvedCategory)}`
+    })
     .join('\n\n')
 
   const userBlock = [

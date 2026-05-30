@@ -63,6 +63,58 @@
   box-shadow: 0 0 14px rgba(107, 63, 160, 0.35);
 }
 
+/* ---- spread selector (1枚引き / 3枚引き) ---- */
+.spreadRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  width: 100%;
+  max-width: 360px;
+}
+
+.spreadBtn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(184, 159, 212, 0.25);
+  border-radius: 14px;
+  padding: 12px 8px;
+  font-size: 0.98rem;
+  color: rgba(240, 230, 211, 0.6);
+  cursor: pointer;
+  transition:
+    background 0.2s,
+    border-color 0.2s,
+    color 0.2s,
+    box-shadow 0.2s;
+  letter-spacing: 0.04em;
+}
+
+.spreadBtn:hover:not(:disabled) {
+  border-color: rgba(184, 159, 212, 0.5);
+  color: #e8d9c5;
+}
+
+.spreadBtnActive {
+  background: rgba(107, 63, 160, 0.4);
+  border-color: #a06bf0;
+  color: #f0e6d3;
+  box-shadow: 0 0 16px rgba(107, 63, 160, 0.35);
+}
+
+.spreadBtn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.spreadSub {
+  font-size: 0.66rem;
+  letter-spacing: 0.1em;
+  color: rgba(184, 159, 212, 0.7);
+}
+
 /* ---- question input ---- */
 .questionWrap {
   width: 100%;
@@ -142,11 +194,44 @@
   display: none;
 }
 
+/* ---- card row (1 or 3 cards) ---- */
+.cardRow {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  gap: 10px;
+  width: 100%;
+}
+
+.cardRowMulti {
+  gap: 8px;
+}
+
+.cardSlot {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.positionLabel {
+  font-size: 0.72rem;
+  letter-spacing: 0.16em;
+  color: rgba(184, 159, 212, 0.85);
+}
+
 /* ---- card flip ---- */
 .scene {
   width: 180px;
   height: 310px;
   perspective: 900px;
+}
+
+/* 3枚引き用の小さめカード */
+.sceneSmall {
+  width: 100px;
+  height: 172px;
+  perspective: 700px;
 }
 
 .card {
@@ -304,8 +389,25 @@
 }
 
 .cardLabel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
   text-align: center;
   margin-bottom: 14px;
+}
+
+.cardLabelItem {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.cardLabelPos {
+  font-size: 0.78rem;
+  color: rgba(184, 159, 212, 0.8);
+  letter-spacing: 0.08em;
 }
 
 .cardName {
