@@ -109,11 +109,12 @@
   - `push.ts`: URI を `https://liff.line.me/${NEXT_PUBLIC_LIFF_ID}?liff.state=/liff/history/:id` 形式に変更し LINE 内(LIFF)で開くようにした(`LIFF_ID` 未設定時は `APP_URL` 直リンクにフォールバック)
   - `liff/card/page.tsx`: LIFF 初期化後に `liff.state` のパスを読み取り `/liff/history/:id` へ内部遷移(`/liff/` パスのみ許可しオープンリダイレクトを防止)
 
-### 7. 3枚スプレッド鑑定【コンテンツ深化】
+### 7. 3枚スプレッド鑑定【コンテンツ深化】【✅ 完了】
 
-- [ ] 「過去・現在・未来」3枚引きの LIFF UI 実装
-- [ ] 3枚を統合して物語として読む System プロンプト拡張(`spread: 'three'`)
-- [ ] 1枚との使い分けをユーザーが選べるようにする
+- [x] 「過去・現在・未来」3枚引きの LIFF UI 実装（card 画面に 1枚/3枚 切替トグル＋順番フリップ演出）
+- [x] 3枚を統合して物語として読む System プロンプト拡張（`format.ts` に複数枚セクション追加・`spread: 'three-card'`、3枚時は max_tokens 1500）
+- [x] 1枚との使い分けをユーザーが選べるようにする（両方無料。課金ゲートは Stripe フェーズで）
+- [x] history 詳細・LINE push（3枚横並び Flex）・followup（3枚文脈）も3枚対応。DB はマイグレ不要（`spread_type`/`cards` が既にN枚対応）
 
 ### 8. フォローアップ自動メッセージ【リテンション】
 

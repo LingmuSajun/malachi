@@ -24,6 +24,7 @@ export async function POST(req: Request) {
     userName?: string
     question?: string
     questionCategory?: string
+    spread?: string
   }
   try {
     body = await req.json()
@@ -31,15 +32,21 @@ export async function POST(req: Request) {
     return Response.json({ error: 'Invalid JSON' }, { status: 400 })
   }
 
-  const { lineUserId, liffAccessToken, userName, question, questionCategory } = body
+  const { lineUserId, liffAccessToken, userName, question, questionCategory, spread } = body
   if (!lineUserId || !liffAccessToken) {
     return Response.json({ error: 'lineUserId and liffAccessToken are required' }, { status: 400 })
   }
 
+  // スプレッド種別。未指定や不正値は 1枚引き(後方互換)
+  const isThreeCard = spread === 'three'
+  const cardCount = isThreeCard ? 3 : 1
+  // 3枚引きの位置(過去 / 現在 / 未来)
+  const POSITIONS = ['past', 'present', 'future'] as const
+
   // LIFF トークン検証とカード抽選を並列実行
-  const [verifiedUserId, [drawn]] = await Promise.all([
+  const [verifiedUserId, drawnCards] = await Promise.all([
     verifyLiffAccessToken(liffAccessToken),
-    Promise.resolve(drawCards(1)),
+    Promise.resolve(drawCards(cardCount)),
   ])
 
   if (verifiedUserId !== lineUserId) {
@@ -69,34 +76,59 @@ export async function POST(req: Request) {
       ? (questionCategory as 'love' | 'relationships' | 'self' | 'work' | 'decision')
       : undefined
 
-  const startResult = await divineStart({
-    userName: userName?.trim() || undefined,
-    question: resolvedQuestion,
-    questionCategory: resolvedCategory,
-    drawnCards: [{ card: drawn.card, orientation: drawn.orientation }],
-    spread: 'single',
-  })
+  // 各カードに位置を割り当てる(1枚引きは位置なし)
+  const positionedCards = drawnCards.map((d, i) => ({
+    card: d.card,
+    orientation: d.orientation,
+    position: isThreeCard ? POSITIONS[i] : undefined,
+  }))
 
-  const cardRecord: DrawnCardRecord = {
-    card_id: drawn.card.id,
-    slug: drawn.card.slug,
-    orientation: drawn.orientation,
-    position: null,
-  }
+  const startResult = await divineStart(
+    {
+      userName: userName?.trim() || undefined,
+      question: resolvedQuestion,
+      questionCategory: resolvedCategory,
+      drawnCards: positionedCards,
+      spread: isThreeCard ? 'three-card' : 'single',
+    },
+    // 3枚引きは物語が長くなるため出力上限を引き上げる
+    isThreeCard ? { maxTokens: 1500 } : {}
+  )
+
+  const cardRecords: DrawnCardRecord[] = positionedCards.map((d) => ({
+    card_id: d.card.id,
+    slug: d.card.slug,
+    orientation: d.orientation,
+    position: d.position ?? null,
+  }))
 
   const encoder = new TextEncoder()
   const send = (controller: ReadableStreamDefaultController, data: object) => {
     controller.enqueue(encoder.encode(`data: ${JSON.stringify(data)}\n\n`))
   }
 
+  // init イベント: cards 配列を主とする。1枚引きは後方互換のため単一フィールドも併送。
+  const initCards = positionedCards.map((d) => ({
+    cardSlug: d.card.slug,
+    cardName: d.card.name,
+    cardNameEn: d.card.name_en,
+    cardImage: d.card.image,
+    orientation: d.orientation,
+    position: d.position ?? null,
+  }))
+
+  const firstCard = positionedCards[0]
   const initPayload = {
     type: 'init',
     conversationId: conversation.id,
-    cardSlug: drawn.card.slug,
-    cardName: drawn.card.name,
-    cardNameEn: drawn.card.name_en,
-    cardImage: drawn.card.image,
-    orientation: drawn.orientation,
+    spread: isThreeCard ? 'three' : 'single',
+    cards: initCards,
+    // --- 後方互換(1枚引きの旧フロント向け) ---
+    cardSlug: firstCard.card.slug,
+    cardName: firstCard.card.name,
+    cardNameEn: firstCard.card.name_en,
+    cardImage: firstCard.card.image,
+    orientation: firstCard.orientation,
   }
 
   const readableStream = new ReadableStream({
@@ -134,8 +166,8 @@ export async function POST(req: Request) {
           conversation_id: conversation.id,
           user_id: user.id,
           question: resolvedQuestion,
-          spread_type: 'single',
-          cards: [cardRecord],
+          spread_type: isThreeCard ? 'three_card' : 'single',
+          cards: cardRecords,
           response_text: fullText,
           crisis_level: startResult.crisis.level,
           input_tokens: inputTokens || null,
@@ -147,9 +179,12 @@ export async function POST(req: Request) {
 
         pushReadingResult({
           lineUserId,
-          cardName: drawn.card.name,
-          cardImage: drawn.card.image,
-          orientation: drawn.orientation,
+          cards: positionedCards.map((d) => ({
+            cardName: d.card.name,
+            cardImage: d.card.image,
+            orientation: d.orientation,
+            position: d.position ?? null,
+          })),
           text: fullText,
           readingId: reading.id,
         }).catch((err) => console.error('[push] reading result failed:', err))

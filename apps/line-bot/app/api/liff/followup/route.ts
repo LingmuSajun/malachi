@@ -15,6 +15,7 @@ const MAX_HISTORY_MSG_LEN = 2000
 const VALID_ORIENTATIONS = new Set(['upright', 'reversed'])
 
 export async function POST(req: Request) {
+  type CardInput = { slug?: string; orientation?: 'upright' | 'reversed'; position?: string | null }
   let body: {
     lineUserId?: string
     liffAccessToken?: string
@@ -22,6 +23,8 @@ export async function POST(req: Request) {
     followUpQuestion?: string
     cardSlug?: string
     orientation?: 'upright' | 'reversed'
+    cards?: CardInput[]
+    spread?: string
     conversationId?: string
     conversationHistory?: ChatMessage[]
   }
@@ -38,16 +41,25 @@ export async function POST(req: Request) {
     followUpQuestion,
     cardSlug,
     orientation,
+    cards,
+    spread,
     conversationId,
     conversationHistory,
   } = body
+
+  // カード情報を正規化: cards 配列があればそれを、なければ単一フィールドを 1要素配列に(後方互換)
+  const cardInputs: CardInput[] =
+    Array.isArray(cards) && cards.length > 0
+      ? cards
+      : cardSlug && orientation
+        ? [{ slug: cardSlug, orientation, position: null }]
+        : []
 
   if (
     !lineUserId ||
     !liffAccessToken ||
     !followUpQuestion ||
-    !cardSlug ||
-    !orientation ||
+    cardInputs.length === 0 ||
     !conversationId
   ) {
     return Response.json({ error: 'Missing required fields' }, { status: 400 })
@@ -67,8 +79,14 @@ export async function POST(req: Request) {
     return Response.json({ error: 'userName too long' }, { status: 400 })
   }
 
-  if (!VALID_ORIENTATIONS.has(orientation)) {
-    return Response.json({ error: 'Invalid orientation' }, { status: 400 })
+  const MAX_CARDS = 3
+  if (cardInputs.length > MAX_CARDS) {
+    return Response.json({ error: 'too many cards' }, { status: 400 })
+  }
+  for (const c of cardInputs) {
+    if (!c.slug || !c.orientation || !VALID_ORIENTATIONS.has(c.orientation)) {
+      return Response.json({ error: 'Invalid card' }, { status: 400 })
+    }
   }
 
   if (conversationHistory !== undefined) {
@@ -88,29 +106,35 @@ export async function POST(req: Request) {
   const user = await findUserByLineId(lineUserId)
   if (!user) return Response.json({ error: 'User not found' }, { status: 404 })
 
-  let card
+  let resolvedCards
   try {
-    card = getCardBySlug(cardSlug)
+    resolvedCards = cardInputs.map((c) => ({
+      card: getCardBySlug(c.slug!),
+      orientation: c.orientation!,
+      position: c.position ?? undefined,
+    }))
   } catch {
     return Response.json({ error: 'Invalid cardSlug' }, { status: 400 })
   }
+
+  const isThreeCard = spread === 'three' || resolvedCards.length > 1
 
   const resolvedQuestion = followUpQuestion.trim()
 
   const startResult = await divineStart({
     userName: userName?.trim() || undefined,
     question: resolvedQuestion,
-    drawnCards: [{ card, orientation }],
-    spread: 'single',
+    drawnCards: resolvedCards,
+    spread: isThreeCard ? 'three-card' : 'single',
     conversationHistory: conversationHistory ?? [],
   })
 
-  const cardRecord: DrawnCardRecord = {
-    card_id: card.id,
-    slug: card.slug,
-    orientation,
-    position: null,
-  }
+  const cardRecords: DrawnCardRecord[] = resolvedCards.map((d) => ({
+    card_id: d.card.id,
+    slug: d.card.slug,
+    orientation: d.orientation,
+    position: d.position ?? null,
+  }))
 
   const encoder = new TextEncoder()
   const send = (controller: ReadableStreamDefaultController, data: object) => {
@@ -150,8 +174,8 @@ export async function POST(req: Request) {
           conversation_id: conversationId,
           user_id: user.id,
           question: resolvedQuestion,
-          spread_type: 'single',
-          cards: [cardRecord],
+          spread_type: isThreeCard ? 'three_card' : 'single',
+          cards: cardRecords,
           response_text: fullText,
           crisis_level: startResult.crisis.level,
           input_tokens: inputTokens || null,
