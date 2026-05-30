@@ -1,5 +1,6 @@
 'use client'
 
+import { useRouter } from 'next/navigation'
 import { useEffect, useRef, useState } from 'react'
 import styles from './card.module.css'
 
@@ -91,9 +92,13 @@ export default function CardPage() {
   const followUpAbortRef = useRef<AbortController | null>(null)
   const streamingTextRef = useRef('')
   const followUpStreamingRef = useRef('')
+  const router = useRouter()
 
   useEffect(() => {
     ;(async () => {
+      // 「鑑定を見返す」は liff.line.me?liff.state=/liff/history/:id で開かれる。
+      // init で URL が書き換わる場合に備え、liff.state を先に退避しておく。
+      const pendingState = new URLSearchParams(window.location.search).get('liff.state')
       try {
         const liff = (await import('@line/liff')).default
         liffRef.current = liff
@@ -101,6 +106,13 @@ export default function CardPage() {
 
         if (!liff.isLoggedIn()) {
           liff.login()
+          return
+        }
+
+        // 履歴へのディープリンクなら外部ブラウザを開かず LIFF 内で内部遷移する。
+        // オープンリダイレクト防止のため自サイトの /liff/ パスのみ許可。
+        if (pendingState && pendingState.startsWith('/liff/')) {
+          router.replace(pendingState)
           return
         }
 
@@ -120,7 +132,7 @@ export default function CardPage() {
         setPhase('error')
       }
     })()
-  }, [])
+  }, [router])
 
   // 鑑定中フェーズメッセージのサイクル
   useEffect(() => {

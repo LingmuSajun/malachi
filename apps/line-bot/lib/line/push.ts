@@ -24,6 +24,7 @@ export async function pushReadingResult({
   readingId,
 }: ReadingPushParams): Promise<void> {
   const appUrl = process.env.APP_URL?.replace(/\/$/, '')
+  const liffId = process.env.NEXT_PUBLIC_LIFF_ID
   const orientationLabel = orientation === 'upright' ? '正位置' : '逆位置'
   const excerpt = extractExcerpt(text)
 
@@ -78,7 +79,17 @@ export async function pushReadingResult({
       ]
     : [header, cardLabel, separator, excerptText]
 
-  const historyUrl = appUrl && readingId ? `${appUrl}/liff/history/${readingId}` : null
+  // 「鑑定を見返す」リンク。LIFF URL (liff.line.me) 経由にすることで LINE 内(LIFF)で開く。
+  // APP_URL 直リンクだと LINE 外の外部ブラウザが起動してしまうため。
+  let historyUrl: string | null = null
+  if (readingId) {
+    const historyPath = `/liff/history/${readingId}`
+    if (liffId) {
+      historyUrl = `https://liff.line.me/${liffId}?liff.state=${encodeURIComponent(historyPath)}`
+    } else if (appUrl) {
+      historyUrl = `${appUrl}${historyPath}`
+    }
+  }
 
   await getLineClient().pushMessage({
     to: lineUserId,

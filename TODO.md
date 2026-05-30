@@ -105,6 +105,9 @@
 - [x] `readings` テーブルの `reading_id` を LIFF URL のパラメータとして渡す
 - [x] LIFF 側に鑑定詳細ページを実装（カード・質問・鑑定文をフル表示）
 - [x] 認証済みユーザーのみ閲覧可（他者の鑑定 ID を直打ちしてもアクセス不可）
+- [x] **[バグ]** 「鑑定を見返す」ボタンが外部ブラウザで開いてしまう問題を修正する
+  - `push.ts`: URI を `https://liff.line.me/${NEXT_PUBLIC_LIFF_ID}?liff.state=/liff/history/:id` 形式に変更し LINE 内(LIFF)で開くようにした(`LIFF_ID` 未設定時は `APP_URL` 直リンクにフォールバック)
+  - `liff/card/page.tsx`: LIFF 初期化後に `liff.state` のパスを読み取り `/liff/history/:id` へ内部遷移(`/liff/` パスのみ許可しオープンリダイレクトを防止)
 
 ### 7. 3枚スプレッド鑑定【コンテンツ深化】
 
