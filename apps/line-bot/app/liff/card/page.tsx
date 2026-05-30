@@ -1,5 +1,6 @@
 'use client'
 
+import { useRouter } from 'next/navigation'
 import { useEffect, useRef, useState } from 'react'
 import styles from './card.module.css'
 
@@ -51,13 +52,28 @@ const TAROT_TRIVIA = [
   '「世界（21番）」は旅の完結と新たなサイクルの始まり。次の「愚者」へとつながります。',
 ]
 
-interface ReadingResult {
-  conversationId: string
+type SpreadKey = 'single' | 'three'
+
+/** スプレッド位置の日本語ラベル */
+const POSITION_LABELS: Record<string, string> = {
+  past: '過去',
+  present: '現在',
+  future: '未来',
+}
+
+interface CardMeta {
   cardSlug: string
   cardName: string
   cardNameEn: string
   cardImage: string
   orientation: 'upright' | 'reversed'
+  position: string | null
+}
+
+interface ReadingResult {
+  conversationId: string
+  spread: SpreadKey
+  cards: CardMeta[]
   text: string
 }
 
@@ -76,8 +92,10 @@ export default function CardPage() {
   const [question, setQuestion] = useState('')
   const [reading, setReading] = useState<ReadingResult | null>(null)
   const [errorMsg, setErrorMsg] = useState('')
-  const [flipped, setFlipped] = useState(false)
+  // めくれたカード枚数。0=全て裏、1=1枚目まで表、... 順番にめくる演出に使う
+  const [flippedCount, setFlippedCount] = useState(0)
   const [selectedTheme, setSelectedTheme] = useState<ThemeKey | null>(null)
+  const [spread, setSpread] = useState<SpreadKey>('single')
   const [chatHistory, setChatHistory] = useState<ChatMessage[]>([])
   const [followUpText, setFollowUpText] = useState('')
   const [isFollowingUp, setIsFollowingUp] = useState(false)
@@ -91,9 +109,13 @@ export default function CardPage() {
   const followUpAbortRef = useRef<AbortController | null>(null)
   const streamingTextRef = useRef('')
   const followUpStreamingRef = useRef('')
+  const router = useRouter()
 
   useEffect(() => {
     ;(async () => {
+      // 「鑑定を見返す」は liff.line.me?liff.state=/liff/history/:id で開かれる。
+      // init で URL が書き換わる場合に備え、liff.state を先に退避しておく。
+      const pendingState = new URLSearchParams(window.location.search).get('liff.state')
       try {
         const liff = (await import('@line/liff')).default
         liffRef.current = liff
@@ -101,6 +123,13 @@ export default function CardPage() {
 
         if (!liff.isLoggedIn()) {
           liff.login()
+          return
+        }
+
+        // 履歴へのディープリンクなら外部ブラウザを開かず LIFF 内で内部遷移する。
+        // オープンリダイレクト防止のため自サイトの /liff/ パスのみ許可。
+        if (pendingState && pendingState.startsWith('/liff/')) {
+          router.replace(pendingState)
           return
         }
 
@@ -120,7 +149,7 @@ export default function CardPage() {
         setPhase('error')
       }
     })()
-  }, [])
+  }, [router])
 
   // 鑑定中フェーズメッセージのサイクル
   useEffect(() => {
@@ -143,7 +172,7 @@ export default function CardPage() {
   async function handleDraw() {
     if (!lineUserId || !liffAccessToken || phase === 'drawing') return
     setPhase('drawing')
-    setFlipped(false)
+    setFlippedCount(0)
     setStreamingText('')
     streamingTextRef.current = ''
     setDrawingPhaseIndex(0)
@@ -161,6 +190,7 @@ export default function CardPage() {
           userName,
           question: resolvedQ,
           questionCategory: THEMES.find((t) => t.key === selectedTheme)?.category,
+          spread,
         }),
       })
 
@@ -189,18 +219,39 @@ export default function CardPage() {
           }
 
           if (event.type === 'init') {
+            // cards 配列を主に読む。旧フロント互換で単一フィールドにもフォールバック。
+            const rawCards = Array.isArray(event.cards)
+              ? (event.cards as Array<Record<string, unknown>>)
+              : [
+                  {
+                    cardSlug: event.cardSlug,
+                    cardName: event.cardName,
+                    cardNameEn: event.cardNameEn,
+                    cardImage: event.cardImage,
+                    orientation: event.orientation,
+                    position: null,
+                  },
+                ]
+            const cards: CardMeta[] = rawCards.map((c) => ({
+              cardSlug: c.cardSlug as string,
+              cardName: c.cardName as string,
+              cardNameEn: c.cardNameEn as string,
+              cardImage: c.cardImage as string,
+              orientation: c.orientation as 'upright' | 'reversed',
+              position: (c.position as string | null) ?? null,
+            }))
             setReading({
               conversationId: event.conversationId as string,
-              cardSlug: event.cardSlug as string,
-              cardName: event.cardName as string,
-              cardNameEn: event.cardNameEn as string,
-              cardImage: event.cardImage as string,
-              orientation: event.orientation as 'upright' | 'reversed',
+              spread: event.spread === 'three' ? 'three' : 'single',
+              cards,
               text: '',
             })
             setPhase('streaming')
             setChatHistory([{ role: 'user', content: resolvedQ }])
-            setTimeout(() => setFlipped(true), 100)
+            // カードを順番にめくる(過去→現在→未来)。1枚なら1回だけ。
+            cards.forEach((_, i) => {
+              setTimeout(() => setFlippedCount(i + 1), 100 + i * 700)
+            })
           } else if (event.type === 'text') {
             streamingTextRef.current += event.chunk as string
             setStreamingText(streamingTextRef.current)
@@ -244,8 +295,16 @@ export default function CardPage() {
           liffAccessToken,
           userName,
           followUpQuestion: currentQuestion,
-          cardSlug: reading.cardSlug,
-          orientation: reading.orientation,
+          // 後方互換: 1枚目を単一フィールドでも送る
+          cardSlug: reading.cards[0].cardSlug,
+          orientation: reading.cards[0].orientation,
+          // 3枚スプレッドの文脈を保つため全カードを送る
+          cards: reading.cards.map((c) => ({
+            slug: c.cardSlug,
+            orientation: c.orientation,
+            position: c.position,
+          })),
+          spread: reading.spread,
           conversationId: reading.conversationId,
           conversationHistory: chatHistory,
         }),
@@ -319,7 +378,7 @@ export default function CardPage() {
     followUpAbortRef.current = null
     setPhase('ready')
     setReading(null)
-    setFlipped(false)
+    setFlippedCount(0)
     setQuestion('')
     setSelectedTheme(null)
     setChatHistory([])
@@ -357,6 +416,25 @@ export default function CardPage() {
       {/* テーマ選択 + 質問入力(ready/drawing のみ) */}
       {(phase === 'ready' || phase === 'drawing') && (
         <>
+          {/* スプレッド選択(1枚引き / 3枚引き) */}
+          <div className={styles.spreadRow}>
+            <button
+              className={`${styles.spreadBtn} ${spread === 'single' ? styles.spreadBtnActive : ''}`}
+              onClick={() => setSpread('single')}
+              disabled={phase === 'drawing'}
+            >
+              1枚引き
+              <span className={styles.spreadSub}>ひとつの導き</span>
+            </button>
+            <button
+              className={`${styles.spreadBtn} ${spread === 'three' ? styles.spreadBtnActive : ''}`}
+              onClick={() => setSpread('three')}
+              disabled={phase === 'drawing'}
+            >
+              3枚引き
+              <span className={styles.spreadSub}>過去・現在・未来</span>
+            </button>
+          </div>
           <div className={styles.themeRow}>
             {THEMES.map((theme) => (
               <button
@@ -385,24 +463,40 @@ export default function CardPage() {
         </>
       )}
 
-      {/* カード */}
-      <div className={styles.scene}>
-        <div className={`${styles.card} ${flipped ? styles.flipped : ''}`}>
-          {/* 裏面 */}
-          <div className={`${styles.cardFace} ${styles.cardBack}`}>
-            <span className={styles.backSymbol} />
-          </div>
-          {/* 表面 */}
-          {reading && (
-            <div
-              className={`${styles.cardFace} ${styles.cardFront} ${
-                reading.orientation === 'reversed' ? styles.reversed : ''
-              }`}
-            >
-              <img src={`/images/major-arcana/${reading.cardImage}`} alt={reading.cardName} />
+      {/* カード(1枚 or 3枚を横並び) */}
+      <div
+        className={`${styles.cardRow} ${(reading?.cards.length ?? (spread === 'three' ? 3 : 1)) > 1 ? styles.cardRowMulti : ''}`}
+      >
+        {(reading
+          ? reading.cards
+          : Array.from({ length: spread === 'three' ? 3 : 1 }, () => null)
+        ).map((card, i) => {
+          const isThree = (reading?.cards.length ?? (spread === 'three' ? 3 : 1)) > 1
+          const position = card?.position ?? (isThree ? ['past', 'present', 'future'][i] : null)
+          return (
+            <div key={i} className={styles.cardSlot}>
+              {position && <span className={styles.positionLabel}>{POSITION_LABELS[position]}</span>}
+              <div className={`${isThree ? styles.sceneSmall : styles.scene}`}>
+                <div className={`${styles.card} ${flippedCount > i ? styles.flipped : ''}`}>
+                  {/* 裏面 */}
+                  <div className={`${styles.cardFace} ${styles.cardBack}`}>
+                    <span className={styles.backSymbol} />
+                  </div>
+                  {/* 表面 */}
+                  {card && (
+                    <div
+                      className={`${styles.cardFace} ${styles.cardFront} ${
+                        card.orientation === 'reversed' ? styles.reversed : ''
+                      }`}
+                    >
+                      <img src={`/images/major-arcana/${card.cardImage}`} alt={card.cardName} />
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
-          )}
-        </div>
+          )
+        })}
       </div>
 
       {/* カードを引くボタン */}
@@ -427,14 +521,21 @@ export default function CardPage() {
       )}
 
       {/* 結果テキスト(streaming / revealed) */}
-      {(phase === 'streaming' || phase === 'revealed') && reading && flipped && (
+      {(phase === 'streaming' || phase === 'revealed') && reading && flippedCount > 0 && (
         <>
           <div className={styles.result}>
             <div className={styles.cardLabel}>
-              <span className={styles.cardName}>{reading.cardName}</span>
-              <span className={styles.orientationBadge}>
-                {reading.orientation === 'upright' ? '正位置' : '逆位置'}
-              </span>
+              {reading.cards.map((c, i) => (
+                <span key={i} className={styles.cardLabelItem}>
+                  {c.position && (
+                    <span className={styles.cardLabelPos}>{POSITION_LABELS[c.position]}　</span>
+                  )}
+                  <span className={styles.cardName}>{c.cardName}</span>
+                  <span className={styles.orientationBadge}>
+                    {c.orientation === 'upright' ? '正位置' : '逆位置'}
+                  </span>
+                </span>
+              ))}
             </div>
             <div className={styles.readingText}>
               {phase === 'streaming' ? streamingText : reading.text}

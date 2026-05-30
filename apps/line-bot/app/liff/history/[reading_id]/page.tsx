@@ -8,6 +8,13 @@ interface CardInfo {
   orientation: 'upright' | 'reversed'
   cardName: string
   cardImage: string
+  position?: string | null
+}
+
+const POSITION_LABELS: Record<string, string> = {
+  past: '過去',
+  present: '現在',
+  future: '未来',
 }
 
 interface ReadingDetail {
@@ -83,32 +90,50 @@ export default function HistoryPage({ params }: { params: Promise<{ reading_id: 
 
   if (!reading) return null
 
-  const card = reading.cards[0]
-  const orientationLabel = card?.orientation === 'upright' ? '正位置' : '逆位置'
+  const cards = reading.cards ?? []
+  const isMulti = cards.length > 1
 
   return (
     <main className={styles.page}>
       <p className={styles.title}>✦ マラキの導き ✦</p>
 
-      {card?.cardImage && (
-        <div className={styles.scene}>
-          <div className={`${styles.card} ${styles.flipped}`}>
-            <div className={`${styles.cardFace} ${styles.cardBack}`}>
-              <span className={styles.backSymbol} />
+      {cards.length > 0 && (
+        <div className={`${styles.cardRow} ${isMulti ? styles.cardRowMulti : ''}`}>
+          {cards.map((card, i) => (
+            <div key={i} className={styles.cardSlot}>
+              {card.position && POSITION_LABELS[card.position] && (
+                <span className={styles.positionLabel}>{POSITION_LABELS[card.position]}</span>
+              )}
+              <div className={isMulti ? styles.sceneSmall : styles.scene}>
+                <div className={`${styles.card} ${styles.flipped}`}>
+                  <div className={`${styles.cardFace} ${styles.cardBack}`}>
+                    <span className={styles.backSymbol} />
+                  </div>
+                  <div
+                    className={`${styles.cardFace} ${styles.cardFront} ${card.orientation === 'reversed' ? styles.reversed : ''}`}
+                  >
+                    <img src={`/images/major-arcana/${card.cardImage}`} alt={card.cardName} />
+                  </div>
+                </div>
+              </div>
             </div>
-            <div
-              className={`${styles.cardFace} ${styles.cardFront} ${card.orientation === 'reversed' ? styles.reversed : ''}`}
-            >
-              <img src={`/images/major-arcana/${card.cardImage}`} alt={card.cardName} />
-            </div>
-          </div>
+          ))}
         </div>
       )}
 
       <div className={styles.result}>
         <div className={styles.cardLabel}>
-          <span className={styles.cardName}>{card?.cardName}</span>
-          <span className={styles.orientationBadge}>{orientationLabel}</span>
+          {cards.map((card, i) => (
+            <span key={i} className={styles.cardLabelItem}>
+              {card.position && POSITION_LABELS[card.position] && (
+                <span className={styles.cardLabelPos}>{POSITION_LABELS[card.position]}　</span>
+              )}
+              <span className={styles.cardName}>{card.cardName}</span>
+              <span className={styles.orientationBadge}>
+                {card.orientation === 'upright' ? '正位置' : '逆位置'}
+              </span>
+            </span>
+          ))}
         </div>
         <p style={{ color: 'rgba(232,217,197,0.5)', fontSize: '0.78rem', margin: '0 0 12px' }}>
           {reading.question}
