@@ -17,12 +17,20 @@ const POSITION_LABELS: Record<string, string> = {
   future: '未来',
 }
 
+interface FollowUpReading {
+  id: string
+  question: string
+  response_text: string
+  created_at: string
+}
+
 interface ReadingDetail {
   id: string
   question: string
   response_text: string
   created_at: string
   cards: CardInfo[]
+  followUps?: FollowUpReading[]
 }
 
 type Phase = 'loading' | 'ready' | 'error'
@@ -140,6 +148,18 @@ export default function HistoryPage({ params }: { params: Promise<{ reading_id: 
         </p>
         <div className={styles.readingText}>{reading.response_text}</div>
       </div>
+
+      {reading.followUps && reading.followUps.length > 0 && (
+        <div className={styles.followUpSection}>
+          <p className={styles.divider}>— フォローアップ —</p>
+          {reading.followUps.map((fu) => (
+            <div key={fu.id} className={styles.exchange}>
+              <div className={styles.chatQ}>{fu.question}</div>
+              <div className={styles.chatA}>{fu.response_text}</div>
+            </div>
+          ))}
+        </div>
+      )}
 
       <p style={{ color: 'rgba(184,159,212,0.4)', fontSize: '0.72rem', textAlign: 'center' }}>
         {new Date(reading.created_at).toLocaleDateString('ja-JP', {

@@ -1,5 +1,5 @@
 import type { DrawnCardRecord } from '@malachi/database'
-import { findUserByLineId, getReadingById } from '@malachi/database'
+import { findUserByLineId, getReadingById, getReadingsByConversationId } from '@malachi/database'
 import { getCardBySlug } from '@malachi/tarot'
 import { verifyLiffAccessToken } from '../../../../../lib/liff/verify'
 
@@ -37,5 +37,15 @@ export async function GET(req: Request, { params }: { params: Promise<{ reading_
     }
   })
 
-  return Response.json({ ...reading, cards })
+  const allReadings = await getReadingsByConversationId(reading.conversation_id, user.id)
+  const followUps = allReadings
+    .filter((r) => r.id !== reading.id)
+    .map((r) => ({
+      id: r.id,
+      question: r.question,
+      response_text: r.response_text,
+      created_at: r.created_at,
+    }))
+
+  return Response.json({ ...reading, cards, followUps })
 }
