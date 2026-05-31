@@ -177,17 +177,21 @@ export async function POST(req: Request) {
         })
         await touchConversation(conversation.id)
 
-        pushReadingResult({
-          lineUserId,
-          cards: positionedCards.map((d) => ({
-            cardName: d.card.name,
-            cardImage: d.card.image,
-            orientation: d.orientation,
-            position: d.position ?? null,
-          })),
-          text: fullText,
-          readingId: reading.id,
-        }).catch((err) => console.error('[push] reading result failed:', err))
+        try {
+          await pushReadingResult({
+            lineUserId,
+            cards: positionedCards.map((d) => ({
+              cardName: d.card.name,
+              cardImage: d.card.image,
+              orientation: d.orientation,
+              position: d.position ?? null,
+            })),
+            text: fullText,
+            readingId: reading.id,
+          })
+        } catch (pushErr) {
+          console.error('[push] reading result failed:', pushErr)
+        }
 
         send(controller, { type: 'done', readingId: reading.id })
       } catch (err) {
