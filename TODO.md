@@ -99,27 +99,15 @@
 - [x] 鑑定中フェーズメッセージをアニメーション切り替え（2.5秒サイクル）
 - [x] タロット豆知識カルーセル（4.5秒サイクル・スタートランダム）
 
-### 6. 鑑定結果カードから履歴へのリンク【再訪・振り返り】【✅ 完了】
+### 6. 鑑定結果を LINE チャットに送り返す(改訂)【✅ 完了】
 
-- [x] 鑑定結果の Flex Message に「鑑定を見返す」ボタンを追加し、LIFF の鑑定詳細画面 (`/liff/history/[reading_id]`) に遷移させる
-- [x] `readings` テーブルの `reading_id` を LIFF URL のパラメータとして渡す
-- [x] LIFF 側に鑑定詳細ページを実装（カード・質問・鑑定文をフル表示）
-- [x] 認証済みユーザーのみ閲覧可（他者の鑑定 ID を直打ちしてもアクセス不可）
-- [x] **[バグ]** 「鑑定を見返す」ボタンが外部ブラウザで開いてしまう問題を修正する
-  - `push.ts`: URI を `https://liff.line.me/${NEXT_PUBLIC_LIFF_ID}?liff.state=/liff/history/:id` 形式に変更し LINE 内(LIFF)で開くようにした(`LIFF_ID` 未設定時は `APP_URL` 直リンクにフォールバック)
-  - `liff/card/page.tsx`: LIFF 初期化後に `liff.state` のパスを読み取り `/liff/history/:id` へ内部遷移(`/liff/` パスのみ許可しオープンリダイレクトを防止)
-- [x] **[バグ]** 「鑑定を見返す」ボタン押下で 404 になる問題を修正する
-  - 根本原因: LIFF 仕様上 `liff.state` パスはエンドポイント(`/liff/card`)配下でなければならないが `/liff/history/:id` は配下外だった
-  - `push.ts`: `liff.state` を `/liff/card?history={id}` 形式に変更
-  - `card/page.tsx`: `history` クエリパラメータを検出して `/liff/history/:id` へリダイレクト(SDK の挙動差異に備え2パターン対応)
-- [x] **[バグ/仕様]** 同じ鑑定内でフォローアップ質問を複数回した場合、2回目以降の質問と回答が履歴詳細画面で見返せない
-  - 根本原因: 履歴 API が `reading.id` で1行のみ取得。フォローアップは同じ `conversation_id` の別行として保存されていたが取得されていなかった
-  - `packages/database/repositories.ts`: `getReadingsByConversationId` を追加
-  - `api/liff/history/[reading_id]/route.ts`: 同一 `conversation_id` のフォローアップを取得し `followUps` として返すよう更新
-  - `liff/history/[reading_id]/page.tsx`: フォローアップ Q&A を初回鑑定の下に時系列表示
-- [x] **[バグ]** 鑑定結果の LINE プッシュメッセージが送信されないことがある
-  - 根本原因: `pushReadingResult` が fire-and-forget(未 await)で、Vercel がストリーム完了後にプロセスを終了するため LINE API 呼び出しが破棄されることがあった
-  - `api/liff/reading/route.ts`: `pushReadingResult` を `await` に変更し、エラーは try-catch でログ出力
+> 当初「鑑定を見返す」ボタン付き Flex Message を実装したが、LIFF ディープリンクの技術的制約(liff.state パスがエンドポイント配下でなければならない仕様)により安定した動作が困難だったため、仕様を変更。「見返す」リンクを廃止し、鑑定全文をテキストメッセージとして直接 LINE に送信する方式に変更した。
+
+- [x] 鑑定終了後に Flex Message(カード画像) + テキストメッセージ(鑑定全文)を同一 push で送信
+  - `lib/line/push.ts`: Flex からボタン・抜粋を削除。鑑定全文をプレーンテキストの第2メッセージとして追加
+  - `api/liff/reading/route.ts`: `pushReadingResult` を `await` に変更(fire-and-forget だと Vercel がプロセスを終了し送信失敗する問題を修正)
+- [x] 廃止: LIFF 鑑定詳細ページ(`/liff/history/[reading_id]`) およびその API ルートを削除
+- [x] 廃止: `liff/card/page.tsx` の履歴ディープリンクリダイレクトを削除
 
 ### 7. 3枚スプレッド鑑定【コンテンツ深化】【✅ 完了】
 
