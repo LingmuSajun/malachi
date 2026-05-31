@@ -187,7 +187,6 @@ export async function POST(req: Request) {
               position: d.position ?? null,
             })),
             text: fullText,
-            readingId: reading.id,
           })
         } catch (pushErr) {
           console.error('[push] reading result failed:', pushErr)
