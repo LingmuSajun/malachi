@@ -144,19 +144,3 @@ export async function getReadingById(id: string, userId: string): Promise<Readin
   if (error) throw error
   return data
 }
-
-/** 同一会話の全鑑定を時系列で取得(フォローアップ含む) */
-export async function getReadingsByConversationId(
-  conversationId: string,
-  userId: string
-): Promise<ReadingRow[]> {
-  const { data, error } = await db
-    .from('readings')
-    .select()
-    .eq('conversation_id', conversationId)
-    .eq('user_id', userId)
-    .order('created_at', { ascending: true })
-
-  if (error) throw error
-  return data ?? []
-}

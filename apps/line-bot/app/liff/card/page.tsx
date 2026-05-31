@@ -113,12 +113,6 @@ export default function CardPage() {
 
   useEffect(() => {
     ;(async () => {
-      // init で URL が書き換わる場合に備え、必要なパラメータを先に退避する。
-      const searchParams = new URLSearchParams(window.location.search)
-      // liff.state から history パラメータを抽出(LIFF SDK が replaceState した場合の fallback)
-      const pendingState = searchParams.get('liff.state')
-      // LIFF SDK が /liff/card?history=... へ全画面遷移した後の直接パラメータ
-      const pendingHistoryId = searchParams.get('history')
       try {
         const liff = (await import('@line/liff')).default
         liffRef.current = liff
@@ -127,22 +121,6 @@ export default function CardPage() {
         if (!liff.isLoggedIn()) {
           liff.login()
           return
-        }
-
-        // 履歴ディープリンク: LIFF SDK が /liff/card?history={id} に遷移済みのケース
-        if (pendingHistoryId) {
-          router.replace(`/liff/history/${pendingHistoryId}`)
-          return
-        }
-
-        // 履歴ディープリンク: liff.state=/liff/card?history={id} が残っているケース
-        if (pendingState && pendingState.startsWith('/liff/card')) {
-          const stateParams = new URLSearchParams(pendingState.split('?')[1] ?? '')
-          const historyIdFromState = stateParams.get('history')
-          if (historyIdFromState) {
-            router.replace(`/liff/history/${historyIdFromState}`)
-            return
-          }
         }
 
         const profile = await liff.getProfile()
