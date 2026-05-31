@@ -152,14 +152,15 @@ export async function pushReadingResult({
   }
 
   // 「鑑定を見返す」リンク。LIFF URL (liff.line.me) 経由にすることで LINE 内(LIFF)で開く。
-  // APP_URL 直リンクだと LINE 外の外部ブラウザが起動してしまうため。
+  // liff.state のパスは LIFF エンドポイント URL(/liff/card) 配下でなければならない仕様のため、
+  // /liff/card?history={id} 形式にし、card ページ側でリダイレクトする。
   let historyUrl: string | null = null
   if (readingId) {
-    const historyPath = `/liff/history/${readingId}`
     if (liffId) {
-      historyUrl = `https://liff.line.me/${liffId}?liff.state=${encodeURIComponent(historyPath)}`
+      const stateParam = `/liff/card?history=${encodeURIComponent(readingId)}`
+      historyUrl = `https://liff.line.me/${liffId}?liff.state=${encodeURIComponent(stateParam)}`
     } else if (appUrl) {
-      historyUrl = `${appUrl}${historyPath}`
+      historyUrl = `${appUrl}/liff/history/${readingId}`
     }
   }
 

@@ -108,6 +108,18 @@
 - [x] **[バグ]** 「鑑定を見返す」ボタンが外部ブラウザで開いてしまう問題を修正する
   - `push.ts`: URI を `https://liff.line.me/${NEXT_PUBLIC_LIFF_ID}?liff.state=/liff/history/:id` 形式に変更し LINE 内(LIFF)で開くようにした(`LIFF_ID` 未設定時は `APP_URL` 直リンクにフォールバック)
   - `liff/card/page.tsx`: LIFF 初期化後に `liff.state` のパスを読み取り `/liff/history/:id` へ内部遷移(`/liff/` パスのみ許可しオープンリダイレクトを防止)
+- [x] **[バグ]** 「鑑定を見返す」ボタン押下で 404 になる問題を修正する
+  - 根本原因: LIFF 仕様上 `liff.state` パスはエンドポイント(`/liff/card`)配下でなければならないが `/liff/history/:id` は配下外だった
+  - `push.ts`: `liff.state` を `/liff/card?history={id}` 形式に変更
+  - `card/page.tsx`: `history` クエリパラメータを検出して `/liff/history/:id` へリダイレクト(SDK の挙動差異に備え2パターン対応)
+- [x] **[バグ/仕様]** 同じ鑑定内でフォローアップ質問を複数回した場合、2回目以降の質問と回答が履歴詳細画面で見返せない
+  - 根本原因: 履歴 API が `reading.id` で1行のみ取得。フォローアップは同じ `conversation_id` の別行として保存されていたが取得されていなかった
+  - `packages/database/repositories.ts`: `getReadingsByConversationId` を追加
+  - `api/liff/history/[reading_id]/route.ts`: 同一 `conversation_id` のフォローアップを取得し `followUps` として返すよう更新
+  - `liff/history/[reading_id]/page.tsx`: フォローアップ Q&A を初回鑑定の下に時系列表示
+- [x] **[バグ]** 鑑定結果の LINE プッシュメッセージが送信されないことがある
+  - 根本原因: `pushReadingResult` が fire-and-forget(未 await)で、Vercel がストリーム完了後にプロセスを終了するため LINE API 呼び出しが破棄されることがあった
+  - `api/liff/reading/route.ts`: `pushReadingResult` を `await` に変更し、エラーは try-catch でログ出力
 
 ### 7. 3枚スプレッド鑑定【コンテンツ深化】【✅ 完了】
 
@@ -120,6 +132,72 @@
 
 - [ ] 鑑定から3日後に「その後どうでしたか?」を Vercel Cron で自動送信
 - [ ] 返信が次の鑑定への自然な入口になるよう設計
+
+---
+
+## 🔮 鑑定精度改善 — 本質的な品質向上
+
+> 現状の診断: マラキに渡るカード解釈テキストが平均22文字と極端に薄く、
+> 応答の深さはカードデータの質に律速されている。
+
+### 1. カードデータ (`major-arcana.yaml`) の解釈テキスト充実【最優先・最大効果】
+
+> `contexts[category][orientation]` の文字数: 現在**平均22文字**。
+> マラキが深い鑑定をするための素材が不足している。
+
+- [ ] 全22枚 × 5カテゴリ(love/relationships/self/work/decision) × 正逆 = 220フィールドを
+      平均**100文字以上**に書き直す
+  - 「なぜこのカードがこの文脈でこの意味を持つのか」の理由・背景を含める
+  - マラキが引用・変形できる具体的な比喩・情景を1つ以上含める
+  - 現在の「〜の時。」という1文完結を、2〜3文の解釈文に拡張する
+
+### 2. カード固有の象徴情景データ (`symbolism.scene`) の追加【大効果】
+
+> 現在 `symbolism` には `element / planet / keywords` しかなく、
+> 実際のカード絵柄が持つ象徴情景(死神の白い薔薇、審判のラッパ、星の水瓶 等)が
+> プロンプトに渡っていない。
+
+- [ ] `major-arcana.yaml` の各カードに `symbolism.scene` フィールドを追加
+      (例: `「白馬に乗った骸骨が白い薔薇を手に進む。旗には白い薔薇—新しい始まりの象徴」`)
+- [ ] `formatCardForPrompt` で `symbolism.scene` を「絵柄が語るもの:」として渡す
+- [ ] `TarotCard` 型定義 (`packages/tarot/types/card.ts`) を更新
+
+### 3. `voice_hint` の充実【大効果】
+
+> 現在平均93文字。カード固有の語り口ヒントが薄いカードで応答がパターン化する。
+
+- [ ] 全22枚の `voice_hint` を**200文字以上**に拡張する
+  - マラキが具体的に使える比喩・問いかけを1〜2個明示する
+  - そのカードで「やりがちな誤った解釈」を1行で示す(negative example)
+
+### 4. `detectCategory` の精度向上【中効果】
+
+> キーワードマッチのみで、マッチしない質問はすべて `'love'` にフォールバック。
+> 「今日の一枚」「運勢が知りたい」→ love カテゴリの解釈テキストが渡ってしまう。
+
+- [ ] `'general'` カテゴリを `SpreadType` に追加し、カードデータに対応フィールドを用意する
+      (汎用的な解釈: カードの本質的な意味を特定カテゴリに縛らず渡す)
+- [ ] または `detectCategory` を LLM ベースの分類に切り替える(API コスト vs 精度のトレードオフ評価が必要)
+
+### 5. Few-shot examples の拡充【中効果】
+
+> 現在4例のみ(死神逆、運命の輪正、星正、フォローアップ)。
+> work / decision / relationships カテゴリの例が存在しない。
+
+- [ ] `components/examples.ts` に以下のカテゴリ例を追加:
+  - work: 仕事の行き詰まり × 隠者 or 塔
+  - relationships: 友人・家族の軋轢 × 正義 or 力
+  - decision: 二択に迷う × 女教皇 or 恋人
+  - self: 自己肯定 × 太陽 or 世界
+
+### 6. `temperature` の明示的設定【小効果・即対応可】
+
+> 現在 temperature 未設定(Anthropic デフォルト)。
+> 毎回似た書き出しパターンに収束しやすい。FORMAT.ts でバリエーションを求めているが、
+> モデル側の設定と整合していない。
+
+- [ ] `divine.ts` の `DivineOptions` に `temperature?: number` を追加
+      推奨値: `0.9`(創造性 ↑)。評価で最適値を確認する
 
 ---
 

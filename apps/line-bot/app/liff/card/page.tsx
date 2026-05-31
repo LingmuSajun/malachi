@@ -113,9 +113,12 @@ export default function CardPage() {
 
   useEffect(() => {
     ;(async () => {
-      // 「鑑定を見返す」は liff.line.me?liff.state=/liff/history/:id で開かれる。
-      // init で URL が書き換わる場合に備え、liff.state を先に退避しておく。
-      const pendingState = new URLSearchParams(window.location.search).get('liff.state')
+      // init で URL が書き換わる場合に備え、必要なパラメータを先に退避する。
+      const searchParams = new URLSearchParams(window.location.search)
+      // liff.state から history パラメータを抽出(LIFF SDK が replaceState した場合の fallback)
+      const pendingState = searchParams.get('liff.state')
+      // LIFF SDK が /liff/card?history=... へ全画面遷移した後の直接パラメータ
+      const pendingHistoryId = searchParams.get('history')
       try {
         const liff = (await import('@line/liff')).default
         liffRef.current = liff
@@ -126,11 +129,20 @@ export default function CardPage() {
           return
         }
 
-        // 履歴へのディープリンクなら外部ブラウザを開かず LIFF 内で内部遷移する。
-        // オープンリダイレクト防止のため自サイトの /liff/ パスのみ許可。
-        if (pendingState && pendingState.startsWith('/liff/')) {
-          router.replace(pendingState)
+        // 履歴ディープリンク: LIFF SDK が /liff/card?history={id} に遷移済みのケース
+        if (pendingHistoryId) {
+          router.replace(`/liff/history/${pendingHistoryId}`)
           return
+        }
+
+        // 履歴ディープリンク: liff.state=/liff/card?history={id} が残っているケース
+        if (pendingState && pendingState.startsWith('/liff/card')) {
+          const stateParams = new URLSearchParams(pendingState.split('?')[1] ?? '')
+          const historyIdFromState = stateParams.get('history')
+          if (historyIdFromState) {
+            router.replace(`/liff/history/${historyIdFromState}`)
+            return
+          }
         }
 
         const profile = await liff.getProfile()
@@ -475,7 +487,9 @@ export default function CardPage() {
           const position = card?.position ?? (isThree ? ['past', 'present', 'future'][i] : null)
           return (
             <div key={i} className={styles.cardSlot}>
-              {position && <span className={styles.positionLabel}>{POSITION_LABELS[position]}</span>}
+              {position && (
+                <span className={styles.positionLabel}>{POSITION_LABELS[position]}</span>
+              )}
               <div className={`${isThree ? styles.sceneSmall : styles.scene}`}>
                 <div className={`${styles.card} ${flippedCount > i ? styles.flipped : ''}`}>
                   {/* 裏面 */}
